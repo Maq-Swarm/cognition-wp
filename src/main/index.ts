@@ -1,0 +1,91 @@
+/**
+ * Cognition WP — Main Process Entry Point
+ * The VS Code of word processors.
+ */
+
+import { app, BrowserWindow, ipcMain, Menu, dialog, shell, nativeImage } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
+import { WindowManager } from './window-manager';
+import { IPCMainRegistry } from './ipc-registry';
+import { ExtensionHost } from './extension-host';
+import { ConfigStore } from './config-store';
+import { MenuBuilder } from './menu-builder';
+
+let mainWindow: BrowserWindow | null = null;
+let windowManager: WindowManager;
+let extensionHost: ExtensionHost;
+let configStore: ConfigStore;
+
+// Prevent multiple instances
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+}
+
+app.whenReady().then(async () => {
+  // Initialize config store
+  configStore = new ConfigStore();
+
+  // Initialize extension host
+  extensionHost = new ExtensionHost(configStore);
+  await extensionHost.initialize();
+
+  // Create window manager
+  windowManager = new WindowManager(configStore, extensionHost);
+  mainWindow = windowManager.createMainWindow();
+
+  // Build and set menu
+  const menuBuilder = new MenuBuilder(windowManager, extensionHost, configStore);
+  Menu.setApplicationMenu(menuBuilder.buildMenu());
+
+  // Register IPC handlers
+  const ipcRegistry = new IPCMainRegistry(windowManager, extensionHost, configStore);
+  ipcRegistry.registerAll();
+
+  // Activate startup extensions
+  await extensionHost.activateByEvent('onStartup');
+
+  // Handle file open from OS
+  const openFile = process.argv.find(arg => !arg.startsWith('-') && path.isAbsolute(arg) && (arg.endsWith('.cog') || arg.endsWith('.md') || arg.endsWith('.txt')));
+  if (openFile && mainWindow) {
+    windowManager.openFile(openFile);
+  }
+
+  console.log('[Cognition WP] Application started successfully');
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    mainWindow = windowManager.createMainWindow();
+  }
+});
+
+// Handle file open events (macOS)
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  if (mainWindow) {
+    windowManager.openFile(filePath);
+  }
+});
+
+// Security: prevent navigation to external content
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    if (!parsedUrl.origin.startsWith('file://')) {
+      event.preventDefault();
+    }
+  });
+
+  contents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+});

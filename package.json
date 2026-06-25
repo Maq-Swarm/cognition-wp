@@ -1,0 +1,79 @@
+{
+  "name": "cognition-wp",
+  "version": "1.0.0",
+  "description": "Cognition WP — The VS Code of word processors. An open-source, extensible word processor built on Electron + TypeScript.",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "tsc-watch --onSuccess \"electron .\"",
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.css\" \"src/**/*.html\"",
+    "test": "jest",
+    "package": "npm run build && electron-builder",
+    "package:win": "npm run build && electron-builder --win",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:linux": "npm run build && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "keywords": [
+    "word-processor",
+    "editor",
+    "electron",
+    "typescript",
+    "extensions",
+    "plugins",
+    "open-source",
+    "cognition"
+  ],
+  "author": "Maq-Swarm",
+  "license": "MIT",
+  "homepage": "https://github.com/Maq-Swarm/cognition-wp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Maq-Swarm/cognition-wp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Maq-Swarm/cognition-wp/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/jest": "^29.5.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "eslint": "^9.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.0",
+    "ts-jest": "^29.1.0",
+    "tsc-watch": "^6.2.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0"
+  },
+  "build": {
+    "appId": "com.maqswarm.cognitionwp",
+    "productName": "Cognition WP",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**/*",
+      "resources/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "resources/icon.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "resources/icon.png",
+      "category": "Office"
+    }
+  }
+}

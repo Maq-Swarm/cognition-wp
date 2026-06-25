@@ -1,0 +1,467 @@
+/**
+ * Cognition WP — Menu Builder
+ * Constructs the application menu (File, Edit, View, Insert, Format, Tools, Extensions, Help).
+ */
+
+import { Menu, MenuItem, BrowserWindow, dialog, app, shell, clipboard } from 'electron';
+import * as path from 'path';
+import { WindowManager } from './window-manager';
+import { ExtensionHost } from './extension-host';
+import { ConfigStore } from './config-store';
+
+export class MenuBuilder {
+  constructor(
+    private windowManager: WindowManager,
+    private extensionHost: ExtensionHost,
+    private configStore: ConfigStore,
+  ) {}
+
+  buildMenu(): Menu {
+    const template: Electron.MenuItemConstructorOptions[] = [
+      // ─── File Menu ────────────────────────────────────
+      {
+        label: '&File',
+        submenu: [
+          {
+            label: 'New Document',
+            accelerator: 'CmdOrCtrl+N',
+            click: () => this.windowManager.send('doc:new'),
+          },
+          {
+            label: 'Open…',
+            accelerator: 'CmdOrCtrl+O',
+            click: async () => {
+              this.windowManager.send('doc:open');
+            },
+          },
+          { type: 'separator' },
+          {
+            label: 'Save',
+            accelerator: 'CmdOrCtrl+S',
+            click: () => this.windowManager.send('doc:save'),
+          },
+          {
+            label: 'Save As…',
+            accelerator: 'CmdOrCtrl+Shift+S',
+            click: () => this.windowManager.send('doc:saveAs'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Export as Markdown',
+            click: () => this.windowManager.send('doc:export', { format: 'markdown' }),
+          },
+          {
+            label: 'Export as HTML',
+            click: () => this.windowManager.send('doc:export', { format: 'html' }),
+          },
+          {
+            label: 'Export as PDF',
+            click: () => this.windowManager.send('doc:export', { format: 'pdf' }),
+          },
+          {
+            label: 'Export as Plain Text',
+            click: () => this.windowManager.send('doc:export', { format: 'plaintext' }),
+          },
+          { type: 'separator' },
+          {
+            label: 'Page Setup…',
+            click: () => this.windowManager.send('doc:pageSetup'),
+          },
+          {
+            label: 'Print…',
+            accelerator: 'CmdOrCtrl+P',
+            click: () => this.windowManager.send('doc:print'),
+          },
+          { type: 'separator' },
+          { role: 'quit' },
+        ],
+      },
+
+      // ─── Edit Menu ────────────────────────────────────
+      {
+        label: '&Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'selectAll' },
+          { type: 'separator' },
+          {
+            label: 'Find',
+            accelerator: 'CmdOrCtrl+F',
+            click: () => this.windowManager.send('editor:find'),
+          },
+          {
+            label: 'Replace',
+            accelerator: 'CmdOrCtrl+H',
+            click: () => this.windowManager.send('editor:replace'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Find Next',
+            accelerator: 'F3',
+            click: () => this.windowManager.send('editor:findNext'),
+          },
+          {
+            label: 'Find Previous',
+            accelerator: 'Shift+F3',
+            click: () => this.windowManager.send('editor:findPrev'),
+          },
+        ],
+      },
+
+      // ─── View Menu ────────────────────────────────────
+      {
+        label: '&View',
+        submenu: [
+          {
+            label: 'Toggle Sidebar',
+            accelerator: 'CmdOrCtrl+B',
+            click: () => this.windowManager.send('view:toggleSidebar'),
+          },
+          {
+            label: 'Toggle Outline',
+            accelerator: 'CmdOrCtrl+Shift+O',
+            click: () => this.windowManager.send('view:toggleOutline'),
+          },
+          {
+            label: 'Toggle Focus Mode',
+            accelerator: 'CmdOrCtrl+Shift+F',
+            click: () => this.windowManager.send('view:toggleFocusMode'),
+          },
+          {
+            label: 'Toggle Full Screen',
+            accelerator: 'F11',
+            click: () => this.windowManager.send('view:toggleFullscreen'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Zoom In',
+            accelerator: 'CmdOrCtrl+=',
+            click: () => this.windowManager.send('view:zoomIn'),
+          },
+          {
+            label: 'Zoom Out',
+            accelerator: 'CmdOrCtrl+-',
+            click: () => this.windowManager.send('view:zoomOut'),
+          },
+          {
+            label: 'Reset Zoom',
+            accelerator: 'CmdOrCtrl+0',
+            click: () => this.windowManager.send('view:zoomReset'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Command Palette…',
+            accelerator: 'CmdOrCtrl+Shift+P',
+            click: () => this.windowManager.send('view:commandPalette'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Switch Theme',
+            submenu: this.buildThemeMenu(),
+          },
+        ],
+      },
+
+      // ─── Insert Menu ──────────────────────────────────
+      {
+        label: '&Insert',
+        submenu: [
+          {
+            label: 'Heading 1',
+            accelerator: 'CmdOrCtrl+1',
+            click: () => this.windowManager.send('insert:heading', { level: 1 }),
+          },
+          {
+            label: 'Heading 2',
+            accelerator: 'CmdOrCtrl+2',
+            click: () => this.windowManager.send('insert:heading', { level: 2 }),
+          },
+          {
+            label: 'Heading 3',
+            accelerator: 'CmdOrCtrl+3',
+            click: () => this.windowManager.send('insert:heading', { level: 3 }),
+          },
+          { type: 'separator' },
+          {
+            label: 'Bold',
+            accelerator: 'CmdOrCtrl+B',
+            click: () => this.windowManager.send('insert:bold'),
+          },
+          {
+            label: 'Italic',
+            accelerator: 'CmdOrCtrl+I',
+            click: () => this.windowManager.send('insert:italic'),
+          },
+          {
+            label: 'Underline',
+            accelerator: 'CmdOrCtrl+U',
+            click: () => this.windowManager.send('insert:underline'),
+          },
+          {
+            label: 'Strikethrough',
+            click: () => this.windowManager.send('insert:strikethrough'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Link',
+            accelerator: 'CmdOrCtrl+K',
+            click: () => this.windowManager.send('insert:link'),
+          },
+          {
+            label: 'Image',
+            click: () => this.windowManager.send('insert:image'),
+          },
+          {
+            label: 'Table',
+            click: () => this.windowManager.send('insert:table'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Code Block',
+            accelerator: 'CmdOrCtrl+Shift+C',
+            click: () => this.windowManager.send('insert:codeBlock'),
+          },
+          {
+            label: 'Quote Block',
+            accelerator: 'CmdOrCtrl+Shift+Q',
+            click: () => this.windowManager.send('insert:quote'),
+          },
+          {
+            label: 'Horizontal Rule',
+            accelerator: 'CmdOrCtrl+Shift+H',
+            click: () => this.windowManager.send('insert:hr'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Bullet List',
+            click: () => this.windowManager.send('insert:list', { type: 'bullet' }),
+          },
+          {
+            label: 'Numbered List',
+            click: () => this.windowManager.send('insert:list', { type: 'numbered' }),
+          },
+          {
+            label: 'Checklist',
+            click: () => this.windowManager.send('insert:list', { type: 'checklist' }),
+          },
+        ],
+      },
+
+      // ─── Format Menu ──────────────────────────────────
+      {
+        label: 'F&ormat',
+        submenu: [
+          {
+            label: 'Align Left',
+            click: () => this.windowManager.send('format:align', { align: 'left' }),
+          },
+          {
+            label: 'Align Center',
+            click: () => this.windowManager.send('format:align', { align: 'center' }),
+          },
+          {
+            label: 'Align Right',
+            click: () => this.windowManager.send('format:align', { align: 'right' }),
+          },
+          {
+            label: 'Justify',
+            click: () => this.windowManager.send('format:align', { align: 'justify' }),
+          },
+          { type: 'separator' },
+          {
+            label: 'Increase Font Size',
+            click: () => this.windowManager.send('format:fontSize', { delta: 1 }),
+          },
+          {
+            label: 'Decrease Font Size',
+            click: () => this.windowManager.send('format:fontSize', { delta: -1 }),
+          },
+          { type: 'separator' },
+          {
+            label: 'Subscript',
+            click: () => this.windowManager.send('format:subscript'),
+          },
+          {
+            label: 'Superscript',
+            click: () => this.windowManager.send('format:superscript'),
+          },
+          {
+            label: 'Highlight',
+            click: () => this.windowManager.send('format:highlight'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Clear Formatting',
+            accelerator: 'CmdOrCtrl+\\',
+            click: () => this.windowManager.send('format:clear'),
+          },
+        ],
+      },
+
+      // ─── Tools Menu ──────────────────────────────────
+      {
+        label: '&Tools',
+        submenu: [
+          {
+            label: 'Word Count',
+            accelerator: 'CmdOrCtrl+Shift+W',
+            click: () => this.windowManager.send('tools:wordCount'),
+          },
+          {
+            label: 'Spell Check',
+            type: 'checkbox',
+            checked: this.configStore.get('editor.spellcheck') as boolean,
+            click: (menuItem) => {
+              this.configStore.set('editor.spellcheck', menuItem.checked);
+              this.windowManager.send('config:changed', { key: 'editor.spellcheck', value: menuItem.checked });
+            },
+          },
+          {
+            label: 'Auto Save',
+            type: 'checkbox',
+            checked: this.configStore.get('editor.autoSave') as boolean,
+            click: (menuItem) => {
+              this.configStore.set('editor.autoSave', menuItem.checked);
+              this.windowManager.send('config:changed', { key: 'editor.autoSave', value: menuItem.checked });
+            },
+          },
+          { type: 'separator' },
+          {
+            label: 'Settings…',
+            accelerator: 'CmdOrCtrl+,',
+            click: () => this.windowManager.send('tools:settings'),
+          },
+        ],
+      },
+
+      // ─── Extensions Menu ───────────────────────────────
+      {
+        label: '&Extensions',
+        submenu: [
+          {
+            label: 'Install from VSIX…',
+            click: async () => {
+              const result = await dialog.showOpenDialog({
+                title: 'Install Extension',
+                filters: [
+                  { name: 'Cognition Extension', extensions: ['cogx', 'zip'] },
+                  { name: 'All Files', extensions: ['*'] },
+                ],
+                properties: ['openFile'],
+              });
+              if (!result.canceled && result.filePaths.length > 0) {
+                this.windowManager.send('ext:installRequest', result.filePaths[0]);
+              }
+            },
+          },
+          {
+            label: 'Browse Extensions…',
+            click: () => this.windowManager.send('ext:browse'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Installed Extensions',
+            click: () => this.windowManager.send('ext:manage'),
+          },
+          {
+            label: 'Reload All Extensions',
+            click: () => this.windowManager.send('ext:reloadAll'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Developer: Create New Extension',
+            click: () => this.windowManager.send('ext:createNew'),
+          },
+        ],
+      },
+
+      // ─── Window Menu ────────────────────────────────────
+      {
+        label: '&Window',
+        submenu: [
+          { role: 'minimize' },
+          { role: 'zoom' },
+          { type: 'separator' },
+          {
+            label: 'New Window',
+            accelerator: 'CmdOrCtrl+Shift+N',
+            click: () => this.windowManager.createMainWindow(),
+          },
+        ],
+      },
+
+      // ─── Help Menu ─────────────────────────────────────
+      {
+        label: '&Help',
+        submenu: [
+          {
+            label: 'Documentation',
+            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognition-wp#readme'),
+          },
+          {
+            label: 'Extension API Reference',
+            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognition-wp/tree/main/docs'),
+          },
+          {
+            label: 'Keyboard Shortcuts',
+            accelerator: 'CmdOrCtrl+/',
+            click: () => this.windowManager.send('help:shortcuts'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Report Issue',
+            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognition-wp/issues'),
+          },
+          {
+            label: 'Check for Updates',
+            click: () => this.windowManager.send('help:checkUpdates'),
+          },
+          { type: 'separator' },
+          {
+            label: 'About Cognition WP',
+            click: () => {
+              const win = this.windowManager.getMainWindow();
+              if (win) {
+                dialog.showMessageBox(win, {
+                  type: 'info',
+                  title: 'About Cognition WP',
+                  message: 'Cognition WP',
+                  detail: 'The VS Code of word processors.\n\nVersion: 1.0.0\nPublisher: Maq-Swarm\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
+                  icon: undefined,
+                });
+              }
+            },
+          },
+        ],
+      },
+    ];
+
+    return Menu.buildFromTemplate(template);
+  }
+
+  private buildThemeMenu(): Electron.MenuItemConstructorOptions[] {
+    const themes = [
+      { id: 'cognition-dark', label: 'Cognition Dark' },
+      { id: 'cognition-light', label: 'Cognition Light' },
+      { id: 'cognition-sepia', label: 'Cognition Sepia' },
+      { id: 'cognition-contrast-dark', label: 'High Contrast Dark' },
+    ];
+
+    const currentTheme = this.configStore.get('theme.current') as string;
+
+    return themes.map(theme => ({
+      label: theme.label,
+      type: 'radio' as const,
+      checked: theme.id === currentTheme,
+      click: () => {
+        this.configStore.set('theme.current', theme.id);
+        this.windowManager.send('theme:changed', theme.id);
+      },
+    }));
+  }
+}

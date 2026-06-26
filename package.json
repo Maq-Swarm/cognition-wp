@@ -67,8 +67,9 @@
       "icon": "resources/icon.png"
     },
     "win": {
-      "target": "nsis",
-      "icon": "resources/icon.png"
+      "target": "dir",
+      "icon": "resources/icon.png",
+      "signAndEditExecutable": false
     },
     "linux": {
       "target": "AppImage",

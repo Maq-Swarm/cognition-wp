@@ -1,56 +1,96 @@
 /**
  * Cognition WP — Configuration Store
  * Persistent settings management with VS Code-style dotted keys.
+ * Uses a simple JSON file instead of electron-store (which is ESM-only in v10).
  */
 
-// electron-store v10 has type resolution issues with conf module
-// Using untyped import workaround
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const Store = require('electron-store');
+import { app } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
 import { DEFAULT_CONFIG } from '../shared/constants';
 
 export class ConfigStore {
-  private store: any;
+  private data: Record<string, unknown>;
+  private configPath: string;
+  private watchers: Map<string, ((newValue: unknown, oldValue: unknown) => void)[]> = new Map();
 
   constructor() {
-    this.store = new Store({
-      name: 'cognition-wp-config',
-      defaults: DEFAULT_CONFIG,
-      clearInvalidConfig: true,
-    });
+    this.configPath = path.join(app.getPath('userData'), 'cognition-wp-config.json');
+    this.data = this.load();
+  }
+
+  private load(): Record<string, unknown> {
+    try {
+      if (fs.existsSync(this.configPath)) {
+        const raw = fs.readFileSync(this.configPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        // Merge with defaults so new config keys are always present
+        return { ...DEFAULT_CONFIG, ...parsed };
+      }
+    } catch (err) {
+      console.error('[ConfigStore] Failed to load config, using defaults:', err);
+    }
+    return { ...DEFAULT_CONFIG };
+  }
+
+  private save(): void {
+    try {
+      const dir = path.dirname(this.configPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.configPath, JSON.stringify(this.data, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('[ConfigStore] Failed to save config:', err);
+    }
   }
 
   get<T = unknown>(key: string): T {
-    return this.store.get(key) as T;
+    return this.data[key] as T;
   }
 
   set(key: string, value: unknown): void {
-    this.store.set(key, value);
+    const oldValue = this.data[key];
+    this.data[key] = value;
+    this.save();
+    // Fire watchers
+    const callbacks = this.watchers.get(key);
+    if (callbacks) {
+      for (const cb of callbacks) {
+        cb(value, oldValue);
+      }
+    }
   }
 
   getAll(): Record<string, unknown> {
-    return this.store.store;
+    return { ...this.data };
   }
 
   has(key: string): boolean {
-    return this.store.has(key);
+    return key in this.data;
   }
 
   delete(key: string): void {
-    this.store.delete(key);
+    delete this.data[key];
+    this.save();
   }
 
   reset(key: string): void {
     if (key in DEFAULT_CONFIG) {
-      this.store.set(key, DEFAULT_CONFIG[key]);
+      this.data[key] = DEFAULT_CONFIG[key];
+      this.save();
     }
   }
 
   resetAll(): void {
-    this.store.store = DEFAULT_CONFIG as Record<string, unknown>;
+    this.data = { ...DEFAULT_CONFIG };
+    this.save();
   }
 
   watch(key: string, callback: (newValue: unknown, oldValue: unknown) => void): void {
-    this.store.onDidChange(key, callback);
+    if (!this.watchers.has(key)) {
+      this.watchers.set(key, []);
+    }
+    this.watchers.get(key)!.push(callback);
   }
 }

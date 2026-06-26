@@ -49,9 +49,7 @@
     "tsc-watch": "^6.2.0",
     "typescript": "^5.5.0"
   },
-  "dependencies": {
-    "electron-store": "^10.0.0"
-  },
+  "dependencies": {},
   "build": {
     "appId": "com.maqswarm.cognitionwp",
     "productName": "Cognition WP",

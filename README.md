@@ -6,6 +6,10 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 
 ![Cognition WP](resources/logo.png)
 
+## Download & Install
+
+Download `Cognition WP Setup 1.0.0.exe` from the [releases page](https://github.com/Maq-Swarm/cognition-wp/releases), double-click to install. Creates desktop and Start Menu shortcuts automatically.
+
 ## Features
 
 ### Core Editor
@@ -18,48 +22,40 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 - Text and background color selection
 - Font size control
 - Paragraph alignment (left, center, right, justify)
-- Spell check (native browser spellcheck)
-- Find and replace with sidebar search
-- Auto-save with configurable delay
+- Spell check, auto-save, find and replace
+
+### Export Formats
+- `.cog` — Cognition WP native format (v2.0.0: JSON with metadata, multi-format content, styles, history)
+- `.md` — Markdown (headings, lists, tables, code blocks, links, images, checklists)
+- `.txt` — Plain text
+- `.html` — Standalone HTML with embedded CSS
+- `.pdf` — PDF via Electron printToPDF (A4)
+- `.docx` — Microsoft Word (Office Open XML, built from scratch)
+- `.doc` — Word 97-2003 (RTF format)
 
 ### User Interface
 - VS Code-inspired layout: activity bar, sidebar, editor area, status bar
-- Custom title bar with window controls
-- Tab bar for multiple documents
-- Command palette (Ctrl+Shift+P) — fuzzy search all commands
+- Command palette (Ctrl+Shift+P) with 50+ commands
+- 4 themes: Dark, Light, Sepia, High Contrast
 - Focus mode for distraction-free writing
-- Right panel with document outline (auto-generated from headings)
-- Context menu (right-click in editor)
-- Notification system (info, warning, error, success)
-
-### Themes
-- Cognition Dark (default) — a Catppuccin Mocha-inspired palette
-- Cognition Light — clean and bright
-- Cognition Sepia — warm, paper-like
-- High Contrast Dark — maximum readability
-
-### Document Formats
-- `.cog` — Cognition WP native format (JSON with rich content)
-- `.md` — Markdown import/export
-- `.html` — HTML export
-- `.txt` — Plain text export
-- Print support
+- Document outline (auto-generated from headings)
+- Context menu, notification system
+- Custom title bar with window controls
+- Status bar (word count, reading time, cursor position, theme, spellcheck)
 
 ### Extension System (VS Code-style)
-- `package.json` manifest with `contributes` — just like VS Code
-- Commands, keybindings, menus, configuration, themes, views
-- Extension API: `ctx.commands`, `ctx.editor`, `ctx.notifications`, `ctx.statusBar`, `ctx.documents`, `ctx.fs`, `ctx.config`, `ctx.logger`
-- Activation events: `onStartup`, `onCommand`, `onLanguage`, `onDocumentOpen`, `onDocumentSave`, `onView`, `onTheme`, `*`
-- Install from `.cogx` packages or directories
-- Enable/disable/reload/uninstall from the Extensions sidebar
-- Extension gallery (coming soon)
+- `package.json` manifest with `contributes`
+- Extension API: commands, editor, documents, notifications, statusBar, config, fs, logger
+- Activation events: onStartup, onCommand, onLanguage, onDocumentOpen, etc.
+- Install/uninstall/enable/disable/reload from Extensions sidebar
+- Sample extension included (Word Count Pro)
 
 ### Plugin Compatibility (External Tools)
 - JSON-RPC 2.0 over stdio protocol
-- External tools (like Claude Code, Codex, etc.) can plug in
+- External tools (Claude Code, Codex, etc.) can plug in
 - Full editor access: get/set content, selection, insertion
-- Send notifications, create status bar items, register commands
-- See [Plugin Protocol](docs/plugin-protocol.md) for details
+- Language-agnostic (Node.js, Python, anything that speaks JSON-RPC)
+- See [Plugin Protocol](docs/plugin-protocol.md)
 
 ## Keyboard Shortcuts
 
@@ -69,8 +65,6 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 | Ctrl+O | Open File |
 | Ctrl+S | Save |
 | Ctrl+Shift+S | Save As |
-| Ctrl+Z | Undo |
-| Ctrl+Y | Redo |
 | Ctrl+F | Find |
 | Ctrl+H | Replace |
 | Ctrl+B | Bold |
@@ -81,151 +75,34 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 | Ctrl+Shift+P | Command Palette |
 | Ctrl+Shift+F | Focus Mode |
 | Ctrl+Shift+O | Toggle Outline |
-| Ctrl+B (outside editor) | Toggle Sidebar |
 | Ctrl+, | Settings |
 | F11 | Full Screen |
-| Ctrl+/ | Show Shortcuts |
 
-## Getting Started
+## Build from Source
 
-### Prerequisites
-- Node.js 18+ (tested on v24)
-- npm 9+
-
-### Install Dependencies
 ```bash
 npm install
-```
-
-### Run in Development
-```bash
-npm run dev
-```
-
-### Build
-```bash
 npm run build
-```
-
-### Run
-```bash
-npm start
-```
-
-### Package for Distribution
-```bash
-# Windows
-npm run package:win
-
-# macOS
-npm run package:mac
-
-# Linux
-npm run package:linux
+npm start          # Run in dev
+npm run package:win  # Build installer (Windows)
 ```
 
 ## Creating an Extension
 
-See [Extension API Guide](docs/extension-api.md) for full documentation.
+See [Extension API Guide](docs/extension-api.md).
 
-### Quick Start
-
-1. Create a directory in your extensions folder (`~/.cognition-wp/extensions/` on Windows: `%APPDATA%/cognition-wp/extensions/`)
-2. Add a `package.json`:
-
-```json
-{
-  "name": "my-extension",
-  "displayName": "My Extension",
-  "description": "Does something cool",
-  "version": "1.0.0",
-  "publisher": "your-name",
-  "engines": { "cognitionWp": "^1.0.0" },
-  "main": "index.js",
-  "activationEvents": ["onStartup"],
-  "contributes": {
-    "commands": [
-      {
-        "command": "myext.hello",
-        "title": "Say Hello",
-        "category": "My Extension",
-        "icon": "",
-        "enablement": "true"
-      }
-    ]
-  }
-}
-```
-
-3. Create `index.js`:
-
-```javascript
-exports.activate = function(ctx) {
-  ctx.commands.registerCommand('myext.hello', () => {
-    ctx.notifications.info('Hello from my extension!');
-  });
-};
-```
-
-4. Restart Cognition WP — your extension will be discovered and activated on startup.
-
-## Creating a Plugin (External Tool)
-
-Plugins are external processes that communicate with Cognition WP via JSON-RPC 2.0 over stdio. See [Plugin Protocol](docs/plugin-protocol.md).
-
-1. Create a directory in `%APPDATA%/cognition-wp/plugins/my-plugin/`
-2. Add a `plugin.json`:
-
-```json
-{
-  "id": "my-plugin",
-  "name": "My Plugin",
-  "version": "1.0.0",
-  "command": "node",
-  "args": ["main.js"],
-  "capabilities": ["editor", "notifications"]
-}
-```
-
-3. Write your plugin process (any language that can do JSON-RPC over stdio).
+1. Create a directory in `%APPDATA%/cognition-wp/extensions/my-extension/`
+2. Add a `package.json` with manifest
+3. Create `index.js` with `exports.activate = function(ctx) { ... }`
+4. Restart Cognition WP
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────┐
-│                  Main Process                 │
-│  ┌─────────────┐  ┌──────────────────────┐  │
-│  │ Window Mgr  │  │    Extension Host     │  │
-│  ├─────────────┤  ├──────────────────────┤  │
-│  │ Menu Builder│  │    Plugin Host        │  │
-│  ├─────────────┤  │  (JSON-RPC stdio)    │  │
-│  │ IPC Registry│  └──────────────────────┘  │
-│  └─────────────┘         │                    │
-│         │                │                    │
-│  ┌──────┴────────────────┴──────────────┐    │
-│  │         Config Store                  │    │
-│  └───────────────────────────────────────┘    │
-└──────────────────┬───────────────────────────┘
-                   │  contextBridge (secure)
-┌──────────────────┴───────────────────────────┐
-│               Renderer Process                │
-│  ┌─────────┐ ┌────────┐ ┌──────────────────┐ │
-│  │Activity │ │Sidebar │ │  Editor (CE)      │ │
-│  │  Bar    │ ├────────┤ │  ┌─────────────┐  │ │
-│  ├─────────┤ │Search  │ │  │ ContentEdit │  │ │
-│  │Settings │ │Outline │ │  │  div        │  │ │
-│  └─────────┘ │Ext Mgr  │ │  └─────────────┘  │ │
-│              └────────┘ └──────────────────┘ │
-│  ┌─────────────────────────────────────────┐ │
-│  │  Status Bar / Command Palette / Notifs  │ │
-│  └─────────────────────────────────────────┘ │
-└──────────────────────────────────────────────┘
-```
+- **Main Process**: WindowManager, MenuBuilder, IPCRegistry, ExtensionHost, PluginHost, ExportManager, ConfigStore
+- **Preload**: Secure contextBridge (contextIsolation, no nodeIntegration, sandboxed)
+- **Renderer**: HTML/CSS/JS editor with full formatting toolbar
+- **Zero runtime dependencies** — config stored as plain JSON, no external libs needed at runtime
 
 ## License
 
 MIT — © Maq-Swarm
-
-## Contributing
-
-Issues and pull requests are welcome at https://github.com/Maq-Swarm/cognition-wp

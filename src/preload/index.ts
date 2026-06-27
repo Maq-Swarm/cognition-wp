@@ -15,7 +15,7 @@ const cognitionAPI = {
       ipcRenderer.invoke('doc:save', data),
     saveAs: (data: { content: string; format: string; title: string }) =>
       ipcRenderer.invoke('doc:saveAs', data),
-    export: (data: { content: string; format: string; filePath: string }) =>
+    export: (data: { format: string; content: string; title: string }) =>
       ipcRenderer.invoke('doc:export', data),
     import: (filePath: string) => ipcRenderer.invoke('doc:import', filePath),
     onOpen: (callback: (filePath: string) => void) => {

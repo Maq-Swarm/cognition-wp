@@ -9,14 +9,19 @@ import * as fs from 'fs';
 import { WindowManager } from './window-manager';
 import { ExtensionHost } from './extension-host';
 import { ConfigStore } from './config-store';
+import { ExportManager } from './export-manager';
 import { BUILTIN_THEMES, COGNITION_DOC_FORMAT } from '../shared/constants';
 
 export class IPCMainRegistry {
+  private exportManager: ExportManager;
+
   constructor(
     private windowManager: WindowManager,
     private extensionHost: ExtensionHost,
     private configStore: ConfigStore,
-  ) {}
+  ) {
+    this.exportManager = new ExportManager();
+  }
 
   registerAll() {
     this.registerDocumentHandlers();
@@ -76,17 +81,11 @@ export class IPCMainRegistry {
       };
     });
 
-    ipcMain.handle('doc:save', async (_, docData: { content: string; filePath: string; format: string }) => {
+    ipcMain.handle('doc:save', async (_, docData: { content: string; filePath: string; format: string; title: string }) => {
       let content = docData.content;
 
-      if (docData.format === 'cognition' && docData.filePath.endsWith('.cog')) {
-        content = JSON.stringify({
-          magic: COGNITION_DOC_FORMAT.magic,
-          version: COGNITION_DOC_FORMAT.version,
-          content: docData.content,
-          createdAt: Date.now(),
-          appVersion: '1.0.0',
-        }, null, 2);
+      if (docData.filePath.endsWith('.cog')) {
+        content = this.exportManager['buildCogJson'](docData.content, docData.title || 'Untitled');
       }
 
       fs.writeFileSync(docData.filePath, content, 'utf-8');
@@ -112,22 +111,19 @@ export class IPCMainRegistry {
 
       let content = docData.content;
       if (result.filePath.endsWith('.cog')) {
-        content = JSON.stringify({
-          magic: COGNITION_DOC_FORMAT.magic,
-          version: COGNITION_DOC_FORMAT.version,
-          content: docData.content,
-          createdAt: Date.now(),
-          appVersion: '1.0.0',
-        }, null, 2);
+        content = this.exportManager['buildCogJson'](docData.content, docData.title || 'Untitled');
       }
 
       fs.writeFileSync(result.filePath, content, 'utf-8');
       return { success: true, filePath: result.filePath };
     });
 
-    ipcMain.handle('doc:export', async (_, data: { content: string; format: string; filePath: string }) => {
-      fs.writeFileSync(data.filePath, data.content, 'utf-8');
-      return { success: true };
+    ipcMain.handle('doc:export', async (_, data: { format: string; content: string; title: string }) => {
+      return this.exportManager.exportDocument({
+        format: data.format as any,
+        content: data.content,
+        title: data.title,
+      });
     });
 
     ipcMain.handle('doc:import', async (_, filePath: string) => {

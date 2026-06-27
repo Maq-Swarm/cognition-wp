@@ -809,7 +809,11 @@ const BUILTIN_COMMANDS = [
   { id: 'doc:saveAs', title: 'Save As…', category: 'File', shortcut: 'Ctrl+Shift+S' },
   { id: 'doc:export:md', title: 'Export as Markdown', category: 'File' },
   { id: 'doc:export:html', title: 'Export as HTML', category: 'File' },
+  { id: 'doc:export:pdf', title: 'Export as PDF', category: 'File' },
+  { id: 'doc:export:docx', title: 'Export as Word (.docx)', category: 'File' },
+  { id: 'doc:export:doc', title: 'Export as Word 97-2003 (.doc)', category: 'File' },
   { id: 'doc:export:txt', title: 'Export as Plain Text', category: 'File' },
+  { id: 'doc:export:cog', title: 'Export as Cognition Document', category: 'File' },
   { id: 'doc:print', title: 'Print…', category: 'File', shortcut: 'Ctrl+P' },
   { id: 'editor:find', title: 'Find', category: 'Edit', shortcut: 'Ctrl+F' },
   { id: 'editor:replace', title: 'Replace', category: 'Edit', shortcut: 'Ctrl+H' },
@@ -959,7 +963,11 @@ function executeCommandById(cmdId) {
     case 'doc:saveAs': saveAsDocument(); break;
     case 'doc:export:md': exportDocument('markdown'); break;
     case 'doc:export:html': exportDocument('html'); break;
+    case 'doc:export:pdf': exportDocument('pdf'); break;
+    case 'doc:export:docx': exportDocument('docx'); break;
+    case 'doc:export:doc': exportDocument('doc'); break;
     case 'doc:export:txt': exportDocument('plaintext'); break;
+    case 'doc:export:cog': exportDocument('cog'); break;
     case 'doc:print': window.print(); break;
     case 'editor:find': toggleFindReplace(); break;
     case 'editor:replace': toggleFindReplace(true); break;
@@ -1058,6 +1066,7 @@ async function saveDocument() {
     content,
     filePath: CognitionWP.docPath,
     format: CognitionWP.docFormat,
+    title: CognitionWP.docTitle,
   });
   markClean();
   showNotification('info', 'Saved', CognitionWP.docTitle);
@@ -1080,21 +1089,14 @@ async function saveAsDocument() {
 }
 
 async function exportDocument(format) {
-  let content = '';
+  const content = CognitionWP.editor.innerHTML;
   const title = CognitionWP.docTitle;
 
-  if (format === 'markdown') {
-    content = htmlToMarkdown(CognitionWP.editor);
-  } else if (format === 'html') {
-    content = '<!DOCTYPE html>\n<html>\n<head><meta charset="UTF-8"><title>' +
-      title + '</title></head>\n<body>\n' + CognitionWP.editor.innerHTML + '\n</body>\n</html>';
-  } else if (format === 'plaintext') {
-    content = CognitionWP.editor.innerText;
-  }
-
-  const result = await window.cognition.documents.saveAs({ content, format, title });
-  if (result) {
-    showNotification('success', 'Exported', `Exported as ${format}`);
+  const result = await window.cognition.documents.export({ format, content, title });
+  if (result && result.success) {
+    showNotification('success', 'Exported', `Exported as ${format.toUpperCase()}`);
+  } else if (result && result.error) {
+    showNotification('error', 'Export Failed', result.error);
   }
 }
 

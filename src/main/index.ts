@@ -11,6 +11,7 @@ import { IPCMainRegistry } from './ipc-registry';
 import { ExtensionHost } from './extension-host';
 import { ConfigStore } from './config-store';
 import { MenuBuilder } from './menu-builder';
+import { ExportManager } from './export-manager';
 
 let mainWindow: BrowserWindow | null = null;
 let windowManager: WindowManager;

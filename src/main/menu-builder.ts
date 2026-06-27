@@ -47,20 +47,37 @@ export class MenuBuilder {
           },
           { type: 'separator' },
           {
-            label: 'Export as Markdown',
-            click: () => this.windowManager.send('doc:export', { format: 'markdown' }),
-          },
-          {
-            label: 'Export as HTML',
-            click: () => this.windowManager.send('doc:export', { format: 'html' }),
-          },
-          {
-            label: 'Export as PDF',
-            click: () => this.windowManager.send('doc:export', { format: 'pdf' }),
-          },
-          {
-            label: 'Export as Plain Text',
-            click: () => this.windowManager.send('doc:export', { format: 'plaintext' }),
+            label: 'Export as…',
+            submenu: [
+              {
+                label: 'Markdown (.md)',
+                click: () => this.windowManager.send('doc:export', { format: 'markdown' }),
+              },
+              {
+                label: 'HTML (.html)',
+                click: () => this.windowManager.send('doc:export', { format: 'html' }),
+              },
+              {
+                label: 'PDF (.pdf)',
+                click: () => this.windowManager.send('doc:export', { format: 'pdf' }),
+              },
+              {
+                label: 'Word Document (.docx)',
+                click: () => this.windowManager.send('doc:export', { format: 'docx' }),
+              },
+              {
+                label: 'Word 97-2003 (.doc)',
+                click: () => this.windowManager.send('doc:export', { format: 'doc' }),
+              },
+              {
+                label: 'Plain Text (.txt)',
+                click: () => this.windowManager.send('doc:export', { format: 'plaintext' }),
+              },
+              {
+                label: 'Cognition Document (.cog)',
+                click: () => this.windowManager.send('doc:export', { format: 'cog' }),
+              },
+            ],
           },
           { type: 'separator' },
           {

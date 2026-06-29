@@ -87,12 +87,12 @@
 
 #editor-page sub {
   vertical-align: sub;
-  font-size: 0.75em;
+  font-size: 0.5em;
 }
 
 #editor-page sup {
   vertical-align: super;
-  font-size: 0.75em;
+  font-size: 0.5em;
 }
 
 #editor-page mark, #editor-page .highlight {
@@ -276,9 +276,7 @@
 }
 
 /* ── Focus Mode ─────────────────────────────────────────── */
-body.focus-mode #activity-bar,
 body.focus-mode #sidebar,
-body.focus-mode #tab-bar,
 body.focus-mode #editor-toolbar,
 body.focus-mode #status-bar,
 body.focus-mode #right-panel {

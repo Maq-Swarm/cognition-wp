@@ -6,7 +6,7 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import { COGNITION_DOC_FORMAT } from '../shared/constants';
+import { COGNITION_DOC_FORMAT, APP_VERSION } from '../shared/constants';
 
 export class ExportManager {
   constructor() {
@@ -84,53 +84,291 @@ export class ExportManager {
     }
   }
 
-  // ─── .cog Format (v2.0.0) ───────────────────────────────
+  // ─── .cog Format (v3.0.0) ───────────────────────────────
+  // Markdown body with YAML frontmatter — readable by humans and AI agents.
+  //
+  // File layout:
+  //   ---
+  //   magic: COGWP
+  //   version: 3.0.0
+  //   title: My Document
+  //   author: Waylon
+  //   created: 2026-06-28T12:00:00Z
+  //   modified: 2026-06-28T12:30:00Z
+  //   word_count: 42
+  //   reading_time: 1
+  //   theme: cognition-light
+  //   ---
+  //   
+  //   # My Document
+  //   
+  //   This is the **content** in *markdown*.
 
-  buildCogJson(htmlContent: string, title: string): string {
+  buildCogJson(htmlContent: string, title: string, existingFilePath?: string): string {
+    return this.buildCogMarkdown(htmlContent, title, existingFilePath);
+  }
+
+  buildCogMarkdown(htmlContent: string, title: string, existingFilePath?: string): string {
+    const yaml = require('js-yaml');
     const stats = this.computeStats(htmlContent);
-    const doc: CognitionDocFile = {
+    const now = new Date();
+    const markdownBody = this.htmlToMarkdown(htmlContent);
+
+    // Read existing frontmatter to preserve metadata across saves
+    let existingMeta: Record<string, any> = {};
+    let existingHistory: Array<{ ts: string; action: string }> = [];
+
+    if (existingFilePath && fs.existsSync(existingFilePath)) {
+      try {
+        const raw = fs.readFileSync(existingFilePath, 'utf-8');
+        const parsed = this.parseCogFile(raw);
+        if (parsed) {
+          existingMeta = parsed.frontmatter;
+          existingHistory = parsed.frontmatter.history || [];
+        }
+      } catch {
+        // Corrupted or old format — start fresh
+      }
+    }
+
+    const isExisting = Object.keys(existingMeta).length > 0;
+
+    const frontmatter: Record<string, any> = {
       magic: COGNITION_DOC_FORMAT.magic,
-      version: '2.0.0',
-      metadata: {
-        title: title || 'Untitled',
-        author: '',
-        subject: '',
-        keywords: [],
-        createdAt: Date.now(),
-        modifiedAt: Date.now(),
-        appVersion: '1.0.0',
-        format: 'cognition-wp',
-        wordCount: stats.wordCount,
-        charCount: stats.charCount,
-        paragraphCount: stats.paragraphCount,
-        readingTime: stats.readingTime,
-      },
-      content: {
-        type: 'rich-html',
-        html: htmlContent,
-        plainText: this.htmlToText(htmlContent),
-        markdown: this.htmlToMarkdown(htmlContent),
-      },
-      styles: {
-        theme: 'cognition-dark',
-        fontFamily: "'Segoe UI', sans-serif",
-        fontSize: 16,
-        lineHeight: 1.6,
-        maxWidth: 720,
-      },
+      version: '3.0.0',
+      title: title || 'Untitled',
+      author: existingMeta.author || '',
+      subject: existingMeta.subject || '',
+      keywords: existingMeta.keywords || [],
+      created: existingMeta.created || now.toISOString(),
+      modified: now.toISOString(),
+      app_version: APP_VERSION,
+      format: 'cognition-wp',
+      word_count: stats.wordCount,
+      char_count: stats.charCount,
+      paragraph_count: stats.paragraphCount,
+      reading_time: stats.readingTime,
+      theme: existingMeta.theme || 'cognition-light',
+      font_family: existingMeta.font_family || "'Segoe UI', sans-serif",
+      font_size: existingMeta.font_size || 16,
+      line_height: existingMeta.line_height || 1.6,
+      max_width: existingMeta.max_width || 720,
       history: [
-        {
-          timestamp: Date.now(),
-          action: 'created',
-          appVersion: '1.0.0',
-        },
+        ...existingHistory,
+        { ts: now.toISOString(), action: isExisting ? 'modified' : 'created' },
       ],
     };
-    return JSON.stringify(doc, null, 2);
+
+    // Build: ---\n<yaml>\n---\n<markdown body>
+    const yamlStr = yaml.dump(frontmatter, {
+      indent: 2,
+      lineWidth: 120,
+      noRefs: true,
+      sortKeys: false,
+    });
+
+    return `---\n${yamlStr}---\n\n${markdownBody}`;
+  }
+
+  /**
+   * Parse a .cog file (v3 markdown+frontmatter or v2 JSON legacy).
+   * Returns the frontmatter object and the content as HTML (for the editor).
+   */
+  parseCogFile(raw: string): { frontmatter: Record<string, any>; html: string; markdown: string; isLegacy: boolean } | null {
+    // Check for v3 format: starts with ---
+    const trimmed = raw.trimStart();
+    if (trimmed.startsWith('---')) {
+      return this.parseCogV3(raw);
+    }
+
+    // Fallback: try v2 JSON format
+    try {
+      const json = JSON.parse(raw);
+      if (json.magic !== COGNITION_DOC_FORMAT.magic) return null;
+
+      // v2 stored content as { type, html, plainText, markdown }
+      let html = '';
+      let markdown = '';
+      if (json.content && typeof json.content === 'object') {
+        html = json.content.html || '';
+        markdown = json.content.markdown || '';
+      } else if (typeof json.content === 'string') {
+        // v1 fallback
+        html = json.content;
+        markdown = '';
+      }
+
+      // Convert v2 metadata keys to v3-style names for consistency
+      const frontmatter = {
+        magic: json.magic,
+        version: '3.0.0', // upgrade on next save
+        title: json.metadata?.title || 'Untitled',
+        author: json.metadata?.author || '',
+        subject: json.metadata?.subject || '',
+        keywords: json.metadata?.keywords || [],
+        created: json.metadata?.createdAt ? new Date(json.metadata.createdAt).toISOString() : new Date().toISOString(),
+        modified: json.metadata?.modifiedAt ? new Date(json.metadata.modifiedAt).toISOString() : new Date().toISOString(),
+        app_version: json.metadata?.appVersion || APP_VERSION,
+        format: json.metadata?.format || 'cognition-wp',
+        word_count: json.metadata?.wordCount || 0,
+        char_count: json.metadata?.charCount || 0,
+        paragraph_count: json.metadata?.paragraphCount || 0,
+        reading_time: json.metadata?.readingTime || 1,
+        theme: json.styles?.theme || 'cognition-light',
+        font_family: json.styles?.fontFamily || "'Segoe UI', sans-serif",
+        font_size: json.styles?.fontSize || 16,
+        line_height: json.styles?.lineHeight || 1.6,
+        max_width: json.styles?.maxWidth || 720,
+        history: (json.history || []).map((h: any) => ({
+          ts: h.timestamp ? new Date(h.timestamp).toISOString() : new Date().toISOString(),
+          action: h.action || 'unknown',
+        })),
+      };
+
+      return { frontmatter, html, markdown, isLegacy: true };
+    } catch {
+      return null;
+    }
+  }
+
+  private parseCogV3(raw: string): { frontmatter: Record<string, any>; html: string; markdown: string; isLegacy: boolean } | null {
+    const yaml = require('js-yaml');
+
+    // Extract frontmatter between --- delimiters
+    const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+    if (!match) return null;
+
+    const [, yamlStr, body] = match;
+
+    let frontmatter: Record<string, any>;
+    try {
+      frontmatter = yaml.load(yamlStr) || {};
+    } catch {
+      return null;
+    }
+
+    if (frontmatter.magic !== COGNITION_DOC_FORMAT.magic) return null;
+
+    const markdownBody = body.trim();
+
+    // Convert markdown to HTML for the editor
+    const html = this.markdownToHtml(markdownBody);
+
+    return { frontmatter, html, markdown: markdownBody, isLegacy: false };
+  }
+
+  /**
+   * Convert markdown to HTML (lightweight, no external deps).
+   * Handles: headings, bold, italic, code, links, images, lists,
+   * tables, blockquotes, horizontal rules, and paragraphs.
+   */
+  markdownToHtml(md: string): string {
+    let html = md;
+
+    // Escape HTML entities first
+    html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Code blocks (```...```)
+    html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+      return `<pre><code>${code.trim()}</code></pre>`;
+    });
+
+    // Headings
+    html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+    html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+    html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+    html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+    // Horizontal rule
+    html = html.replace(/^---+$/gm, '<hr>');
+
+    // Blockquote
+    html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+    // Un-escape > that was escaped (blockquotes use >)
+    html = html.replace(/<blockquote>&gt;/g, '<blockquote>');
+
+    // Tables (pipe syntax)
+    html = html.replace(/^(\|.+\|)\n(\|[-:\s|]+\|)\n((?:\|.+\|\n?)*)/gm, (_, header, _sep, body) => {
+      const headers = header.split('|').filter((c: string) => c.trim()).map((c: string) => `<th>${c.trim()}</th>`).join('');
+      const rows = body.trim().split('\n').map((row: string) => {
+        const cells = row.split('|').filter((c: string) => c.trim()).map((c: string) => `<td>${c.trim()}</td>`).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+      return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+    });
+
+    // Unordered lists
+    html = html.replace(/(?:^[-*+]\s+.+\n?)+/gm, (match) => {
+      const items = match.trim().split('\n').map((line: string) => {
+        const text = line.replace(/^[-*+]\s+/, '');
+        return `<li>${text}</li>`;
+      }).join('');
+      return `<ul>${items}</ul>`;
+    });
+
+    // Ordered lists
+    html = html.replace(/(?:^\d+\.\s+.+\n?)+/gm, (match) => {
+      const items = match.trim().split('\n').map((line: string) => {
+        const text = line.replace(/^\d+\.\s+/, '');
+        return `<li>${text}</li>`;
+      }).join('');
+      return `<ol>${items}</ol>`;
+    });
+
+    // Inline code (do before bold/italic to avoid conflicts)
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Bold (** or __)
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+    // Italic (* or _)
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    html = html.replace(/(?<!\w)_([^_]+)_(?!\w)/g, '<em>$1</em>');
+
+    // Strikethrough (~~)
+    html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+    // Links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+    // Images
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+    // Paragraphs — wrap remaining lines that aren't already tags
+    const lines = html.split('\n');
+    let result = '';
+    let inParagraph = false;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed === '') {
+        if (inParagraph) {
+          result += '</p>';
+          inParagraph = false;
+        }
+      } else if (/^<(h[1-6]|ul|ol|pre|blockquote|hr|table|img)/.test(trimmed)) {
+        if (inParagraph) {
+          result += '</p>';
+          inParagraph = false;
+        }
+        result += trimmed + '\n';
+      } else {
+        if (!inParagraph) {
+          result += '<p>';
+          inParagraph = true;
+        }
+        result += trimmed + ' ';
+      }
+    }
+    if (inParagraph) result += '</p>';
+
+    return result.trim();
   }
 
   private exportCog(filePath: string, htmlContent: string, title: string) {
-    fs.writeFileSync(filePath, this.buildCogJson(htmlContent, title), 'utf-8');
+    fs.writeFileSync(filePath, this.buildCogMarkdown(htmlContent, title), 'utf-8');
   }
 
   // ─── Markdown ───────────────────────────────────────────

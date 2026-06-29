@@ -29,7 +29,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   'editor.paragraphSpacing': 16,
   'editor.maxLineWidth': 720,
 
-  'theme.current': 'cognition-dark',
+  'theme.current': 'cognition-light',
   'theme.autoDetect': true,
 
   'window.titleBarStyle': 'custom',
@@ -53,8 +53,10 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
 
 export const COGNITION_DOC_FORMAT = {
   magic: 'COGWP',
-  version: '2.0.0',
-  supportedVersions: ['1.0.0', '2.0.0'],
+  version: '3.0.0',
+  supportedVersions: ['1.0.0', '2.0.0', '2.1.0', '3.0.0'],
+  // v3.0.0: Markdown body + YAML frontmatter (human & AI readable)
+  // v2.x:   JSON wrapper (legacy, still readable for backward compat)
 } as const;
 
 export const BUILTIN_THEMES = [

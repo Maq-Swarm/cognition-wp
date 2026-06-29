@@ -48,7 +48,7 @@ app.whenReady().then(async () => {
   await extensionHost.activateByEvent('onStartup');
 
   // Handle file open from OS
-  const openFile = process.argv.find(arg => !arg.startsWith('-') && path.isAbsolute(arg) && (arg.endsWith('.cog') || arg.endsWith('.md') || arg.endsWith('.txt')));
+  const openFile = process.argv.find(arg => !arg.startsWith('-') && path.isAbsolute(arg) && (arg.endsWith('.cog') || arg.endsWith('.md') || arg.endsWith('.txt') || arg.endsWith('.doc') || arg.endsWith('.docx') || arg.endsWith('.pdf') || arg.endsWith('.html')));
   if (openFile && mainWindow) {
     windowManager.openFile(openFile);
   }

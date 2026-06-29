@@ -10,7 +10,10 @@ import { WindowManager } from './window-manager';
 import { ExtensionHost } from './extension-host';
 import { ConfigStore } from './config-store';
 import { ExportManager } from './export-manager';
-import { BUILTIN_THEMES, COGNITION_DOC_FORMAT } from '../shared/constants';
+import { BUILTIN_THEMES } from '../shared/constants';
+// Lazy-loaded imports for file format support
+type MammothType = { convertToHtml: (input: { path: string }) => Promise<{ value: string }> };
+type MarkedType = { marked: (input: string) => string } | ((input: string) => string);
 
 export class IPCMainRegistry {
   private exportManager: ExportManager;
@@ -41,9 +44,11 @@ export class IPCMainRegistry {
         const result = await dialog.showOpenDialog({
           title: 'Open Document',
           filters: [
-            { name: 'All Supported', extensions: ['cog', 'md', 'txt', 'html', 'rtf', 'json'] },
+            { name: 'All Supported', extensions: ['cog', 'md', 'txt', 'html', 'rtf', 'json', 'pdf', 'doc', 'docx'] },
             { name: 'Cognition Document', extensions: ['cog'] },
+            { name: 'Word Documents', extensions: ['doc', 'docx'] },
             { name: 'Markdown', extensions: ['md', 'markdown'] },
+            { name: 'PDF', extensions: ['pdf'] },
             { name: 'Text', extensions: ['txt'] },
             { name: 'HTML', extensions: ['html', 'htm'] },
             { name: 'All Files', extensions: ['*'] },
@@ -54,23 +59,100 @@ export class IPCMainRegistry {
         filePath = result.filePaths[0];
       }
 
-      const content = fs.readFileSync(filePath, 'utf-8');
       const ext = path.extname(filePath).toLowerCase();
       let format = 'plaintext';
-      let parsedContent = content;
+      let parsedContent = '';
 
       if (ext === '.cog') {
+        const content = fs.readFileSync(filePath, 'utf-8');
         try {
-          const doc = JSON.parse(content);
-          parsedContent = doc.content || content;
-          format = 'cognition';
-        } catch {
-          format = 'plaintext';
+          const parsed = this.exportManager.parseCogFile(content);
+          if (!parsed) {
+            format = 'plaintext';
+            parsedContent = content;
+          } else {
+            parsedContent = parsed.html;
+            format = 'cognition';
+          }
+        } catch (e) {
+          throw new Error(`Failed to open .cog file: ${e instanceof Error ? e.message : String(e)}`);
         }
       } else if (ext === '.md' || ext === '.markdown') {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        try {
+          const markedModule = require('marked');
+          const markedFn = (markedModule as any).marked || markedModule;
+          parsedContent = markedFn.parse(content);
+        } catch {
+          // Fallback: basic markdown to HTML
+          parsedContent = content
+            .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`(.+?)`/g, '<code>$1</code>')
+            .split('\n\n')
+            .map(block => block.startsWith('<h') ? block : `<p>${block}</p>`)
+            .join('\n');
+        }
         format = 'markdown';
       } else if (ext === '.html' || ext === '.htm') {
+        parsedContent = fs.readFileSync(filePath, 'utf-8');
         format = 'html';
+      } else if (ext === '.txt' || ext === '.json' || ext === '.rtf') {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        parsedContent = content.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('\n');
+        format = 'plaintext';
+      } else if (ext === '.doc' || ext === '.docx') {
+        try {
+          const mammoth = require('mammoth') as MammothType;
+          const result = await mammoth.convertToHtml({ path: filePath });
+          parsedContent = result.value || '<p>(Empty document)</p>';
+          format = 'word';
+        } catch (e) {
+          // Fallback for .doc (old binary format) — mammoth only supports .docx
+          if (ext === '.doc') {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            // Crude extraction: strip non-printable chars from old .doc binary
+            const text = content.replace(/[^\x20-\x7E\r\n]/g, '').replace(/\r\n\r\n+/g, '\n\n').trim();
+            parsedContent = text.split('\n\n').map(block => `<p>${block}</p>`).join('\n');
+            format = 'word';
+          } else {
+            throw new Error(`Failed to open Word document: ${e instanceof Error ? e.message : String(e)}`);
+          }
+        }
+      } else if (ext === '.pdf') {
+        // PDF: open with system viewer (Electron can't render PDFs natively in contenteditable)
+        // We extract text using a basic approach
+        try {
+          const pdfBuffer = fs.readFileSync(filePath);
+          // Basic PDF text extraction: find text in parentheses between BT...ET blocks
+          const pdfText = pdfBuffer.toString('latin1');
+          const textMatches: string[] = [];
+          const regex = /\(([^)]+)\)/g;
+          let match;
+          while ((match = regex.exec(pdfText)) !== null) {
+            const text = match[1].replace(/\\[nr()]/g, ' ').trim();
+            if (text.length > 0 && textMatches.length < 10000) textMatches.push(text);
+          }
+          if (textMatches.length > 0) {
+            parsedContent = textMatches.map(t => `<p>${t}</p>`).join('\n');
+          } else {
+            parsedContent = '<p>(PDF text could not be extracted. The PDF has been opened in your system viewer.)</p>';
+            shell.openPath(filePath);
+          }
+          format = 'pdf';
+        } catch (e) {
+          // Last resort: open in system viewer
+          shell.openPath(filePath);
+          parsedContent = '<p>(PDF opened in system viewer)</p>';
+          format = 'pdf';
+        }
+      } else {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        parsedContent = content.split('\n').map(line => `<p>${line || '&nbsp;'}</p>`).join('\n');
+        format = 'plaintext';
       }
 
       return {
@@ -85,7 +167,7 @@ export class IPCMainRegistry {
       let content = docData.content;
 
       if (docData.filePath.endsWith('.cog')) {
-        content = this.exportManager['buildCogJson'](docData.content, docData.title || 'Untitled');
+        content = this.exportManager.buildCogJson(docData.content, docData.title || 'Untitled', docData.filePath);
       }
 
       fs.writeFileSync(docData.filePath, content, 'utf-8');
@@ -111,7 +193,8 @@ export class IPCMainRegistry {
 
       let content = docData.content;
       if (result.filePath.endsWith('.cog')) {
-        content = this.exportManager['buildCogJson'](docData.content, docData.title || 'Untitled');
+        // New file — no existing path to read metadata from
+        content = this.exportManager.buildCogJson(docData.content, docData.title || 'Untitled', result.filePath);
       }
 
       fs.writeFileSync(result.filePath, content, 'utf-8');
@@ -241,6 +324,19 @@ export class IPCMainRegistry {
     ipcMain.handle('fs:mkdir', async (_, dirPath: string) => {
       fs.mkdirSync(dirPath, { recursive: true });
       return { success: true };
+    });
+
+    ipcMain.handle('fs:browseImage', async () => {
+      const result = await dialog.showOpenDialog({
+        title: 'Select Image',
+        filters: [
+          { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+      });
+      if (result.canceled || result.filePaths.length === 0) return null;
+      return result.filePaths[0];
     });
   }
 

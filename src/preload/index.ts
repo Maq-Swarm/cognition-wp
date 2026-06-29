@@ -75,6 +75,7 @@ const cognitionAPI = {
       ipcRenderer.invoke('fs:write', filePath, content),
     exists: (filePath: string) => ipcRenderer.invoke('fs:exists', filePath),
     mkdir: (dirPath: string) => ipcRenderer.invoke('fs:mkdir', dirPath),
+    browseImage: () => ipcRenderer.invoke('fs:browseImage'),
   },
 
   // ─── Window Controls ──────────────────────────────────────

@@ -4,9 +4,10 @@
   "description": "Cognition WP — The VS Code of word processors. An open-source, extensible word processor built on Electron + TypeScript.",
   "main": "dist/main/index.js",
   "scripts": {
-    "dev": "tsc-watch --onSuccess \"electron .\"",
-    "build": "tsc -p tsconfig.json",
+    "dev": "tsc-watch --onSuccess \"npm run copy-assets && electron .\"",
+    "build": "tsc -p tsconfig.json && npm run copy-assets",
     "start": "npm run build && electron .",
+    "copy-assets": "node scripts/copy-renderer-assets.js",
     "package": "npm run build && electron-builder",
     "package:win": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",
@@ -41,7 +42,10 @@
     "tsc-watch": "^6.2.0",
     "typescript": "^5.5.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mammoth": "^1.12.0",
+    "marked": "^18.0.5"
+  },
   "build": {
     "appId": "com.maqswarm.cognitionwp",
     "productName": "Cognition WP",
@@ -53,17 +57,23 @@
       {
         "from": "dist",
         "to": "dist",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "resources",
         "to": "resources",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "src/renderer",
         "to": "src/renderer",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       "package.json"
     ],

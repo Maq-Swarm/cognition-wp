@@ -43,7 +43,7 @@ export class WindowManager {
       show: false,
       icon,
       title: 'Cognition WP',
-      backgroundColor: '#1e1e2e',
+      backgroundColor: '#ffffff',
       titleBarStyle: 'hidden',
       frame: false,
       trafficLightPosition: { x: 10, y: 10 },
@@ -51,7 +51,7 @@ export class WindowManager {
         preload: path.join(__dirname, '..', 'preload', 'index.js'),
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: true,
+        sandbox: false,
         spellcheck: true,
         additionalArguments: [
           `--cognition-version=1.0.0`,

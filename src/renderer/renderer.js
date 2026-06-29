@@ -15,7 +15,7 @@ const CognitionWP = {
   isDirty: false,
   wordCount: 0,
   charCount: 0,
-  currentTheme: 'cognition-dark',
+  currentTheme: 'cognition-light',
   config: {},
   commands: [],
   sidebarVisible: true,
@@ -55,7 +55,6 @@ async function init() {
   setupEditorEvents();
   setupToolbar();
   setupWindowControls();
-  setupActivityBar();
   setupKeyboardShortcuts();
   setupCommandPalette();
   setupFindReplace();
@@ -287,29 +286,46 @@ function setupToolbar() {
     });
   }
 
-  // Font size select
-  const fontSizeSelect = document.getElementById('font-size-select');
-  if (fontSizeSelect) {
-    fontSizeSelect.addEventListener('change', () => {
-      document.execCommand('fontSize', false, fontSizeSelect.value);
+  // Font size input (6-120 px, custom CSS-based)
+  const fontSizeInput = document.getElementById('font-size-input');
+  if (fontSizeInput) {
+    fontSizeInput.addEventListener('change', () => {
+      const size = parseInt(fontSizeInput.value);
+      if (isNaN(size) || size < 6 || size > 120) return;
+      // Use execCommand to wrap selection in a span with the font size
+      document.execCommand('fontSize', false, '7');
+      // Now find the font[size="7"] elements and replace with CSS
+      const fontElements = CognitionWP.editor.querySelectorAll('font[size="7"]');
+      fontElements.forEach(el => {
+        el.removeAttribute('size');
+        el.style.fontSize = size + 'px';
+      });
       CognitionWP.editor.focus();
     });
   }
 
-  // Text color
+  // Text color - button triggers hidden color input
+  const textColorBtn = document.getElementById('text-color-btn');
   const textColor = document.getElementById('text-color');
-  if (textColor) {
+  const textColorBar = document.getElementById('text-color-bar');
+  if (textColorBtn && textColor) {
+    textColorBtn.addEventListener('click', () => textColor.click());
     textColor.addEventListener('change', () => {
       document.execCommand('foreColor', false, textColor.value);
+      if (textColorBar) textColorBar.style.background = textColor.value;
       CognitionWP.editor.focus();
     });
   }
 
-  // Background color
+  // Background/highlight color - button triggers hidden color input
+  const bgColorBtn = document.getElementById('bg-color-btn');
   const bgColor = document.getElementById('bg-color');
-  if (bgColor) {
+  const bgColorBar = document.getElementById('bg-color-bar');
+  if (bgColorBtn && bgColor) {
+    bgColorBtn.addEventListener('click', () => bgColor.click());
     bgColor.addEventListener('change', () => {
       document.execCommand('hiliteColor', false, bgColor.value);
+      if (bgColorBar) bgColorBar.style.background = bgColor.value;
       CognitionWP.editor.focus();
     });
   }
@@ -350,15 +366,13 @@ function executeFormatCommand(cmd) {
       toggleChecklistItem();
       break;
     case 'createLink':
-      const url = prompt('Enter URL:');
-      if (url) document.execCommand('createLink', false, url);
+      showLinkDialog();
       break;
     case 'insertImage':
-      const imgUrl = prompt('Enter image URL:');
-      if (imgUrl) document.execCommand('insertImage', false, imgUrl);
+      showImageDialog();
       break;
     case 'insertTable':
-      insertTable();
+      showTableDialog();
       break;
     case 'insertHR':
       document.execCommand('insertHorizontalRule');
@@ -405,25 +419,112 @@ function toggleChecklistItem() {
     '<ul class="checklist"><li>New task</li></ul><p></p>');
 }
 
-function insertTable() {
-  const rows = parseInt(prompt('Number of rows:', '3'));
-  const cols = parseInt(prompt('Number of columns:', '3'));
-  if (!rows || !cols) return;
-
-  let html = '<table><thead><tr>';
-  for (let c = 0; c < cols; c++) {
-    html += `<th>Header ${c + 1}</th>`;
-  }
-  html += '</tr></thead><tbody>';
-  for (let r = 0; r < rows; r++) {
-    html += '<tr>';
-    for (let c = 0; c < cols; c++) {
-      html += '<td></td>';
+function showLinkDialog() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-header">Insert Link</div>
+      <input type="text" id="modal-link-url" class="modal-input" placeholder="https://..." />
+      <input type="text" id="modal-link-text" class="modal-input" placeholder="Link text (optional)" />
+      <div class="modal-buttons">
+        <button class="panel-btn" id="modal-cancel">Cancel</button>
+        <button class="panel-btn primary" id="modal-ok">Insert</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const urlInput = overlay.querySelector('#modal-link-url');
+  urlInput.focus();
+  overlay.querySelector('#modal-cancel').addEventListener('click', () => overlay.remove());
+  const submit = () => {
+    const url = urlInput.value.trim();
+    const text = overlay.querySelector('#modal-link-text').value.trim();
+    if (url) {
+      CognitionWP.editor.focus();
+      if (text) {
+        document.execCommand('insertHTML', false, `<a href="${url}">${text}</a>`);
+      } else {
+        document.execCommand('createLink', false, url);
+      }
     }
-    html += '</tr>';
-  }
-  html += '</tbody></table><p></p>';
-  document.execCommand('insertHTML', false, html);
+    overlay.remove();
+  };
+  overlay.querySelector('#modal-ok').addEventListener('click', submit);
+  urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+function showImageDialog() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-header">Insert Image</div>
+      <input type="text" id="modal-img-url" class="modal-input" placeholder="Image URL or file path" />
+      <input type="text" id="modal-img-alt" class="modal-input" placeholder="Alt text (optional)" />
+      <div class="modal-buttons">
+        <button class="panel-btn" id="modal-cancel">Cancel</button>
+        <button class="panel-btn" id="modal-browse">Browse...</button>
+        <button class="panel-btn primary" id="modal-ok">Insert</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const urlInput = overlay.querySelector('#modal-img-url');
+  urlInput.focus();
+  overlay.querySelector('#modal-cancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#modal-browse').addEventListener('click', async () => {
+    const result = await window.cognition.fs.browseImage();
+    if (result) urlInput.value = result;
+  });
+  const submit = () => {
+    const url = urlInput.value.trim();
+    const alt = overlay.querySelector('#modal-img-alt').value.trim();
+    if (url) {
+      CognitionWP.editor.focus();
+      document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;" />`);
+    }
+    overlay.remove();
+  };
+  overlay.querySelector('#modal-ok').addEventListener('click', submit);
+  urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+function showTableDialog() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-header">Insert Table</div>
+      <div style="display:flex;gap:12px;">
+        <label class="modal-label">Rows: <input type="number" id="modal-rows" class="modal-input" value="3" min="1" max="50" style="width:60px;" /></label>
+        <label class="modal-label">Cols: <input type="number" id="modal-cols" class="modal-input" value="3" min="1" max="20" style="width:60px;" /></label>
+      </div>
+      <div class="modal-buttons">
+        <button class="panel-btn" id="modal-cancel">Cancel</button>
+        <button class="panel-btn primary" id="modal-ok">Insert</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#modal-rows').focus();
+  overlay.querySelector('#modal-cancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#modal-ok').addEventListener('click', () => {
+    const rows = parseInt(overlay.querySelector('#modal-rows').value) || 3;
+    const cols = parseInt(overlay.querySelector('#modal-cols').value) || 3;
+    let html = '<table><thead><tr>';
+    for (let c = 0; c < cols; c++) html += `<th>Header ${c + 1}</th>`;
+    html += '</tr></thead><tbody>';
+    for (let r = 0; r < rows; r++) {
+      html += '<tr>';
+      for (let c = 0; c < cols; c++) html += '<td></td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table><p></p>';
+    CognitionWP.editor.focus();
+    document.execCommand('insertHTML', false, html);
+    overlay.remove();
+  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
 function updateToolbarState() {
@@ -472,57 +573,48 @@ function setupWindowControls() {
   document.getElementById('btn-command-palette').addEventListener('click', () => {
     openCommandPalette();
   });
+  // Toolbar toggle buttons
+  const toggleSidebarBtn = document.getElementById('btn-toggle-sidebar');
+  if (toggleSidebarBtn) {
+    toggleSidebarBtn.addEventListener('click', () => toggleSidebar());
+  }
+  const focusModeBtn = document.getElementById('btn-focus-mode');
+  if (focusModeBtn) {
+    focusModeBtn.addEventListener('click', () => toggleFocusMode());
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
-// ACTIVITY BAR & SIDEBAR
+// SIDEBAR
 // ═══════════════════════════════════════════════════════════
-
-function setupActivityBar() {
-  const icons = document.querySelectorAll('.activity-icon');
-  icons.forEach(icon => {
-    icon.addEventListener('click', () => {
-      icons.forEach(i => i.classList.remove('active'));
-      icon.classList.add('active');
-      const view = icon.getAttribute('data-view');
-      showSidebarView(view);
-    });
-  });
-}
 
 function showSidebarView(view) {
   const sidebar = document.getElementById('sidebar');
   const title = document.getElementById('sidebar-title');
   const content = document.getElementById('sidebar-content');
-  const footer = document.getElementById('sidebar-footer-text');
 
-  sidebar.style.display = 'flex';
+  sidebar.classList.remove('hidden');
   CognitionWP.sidebarVisible = true;
 
   switch (view) {
     case 'explorer':
       title.textContent = 'Explorer';
-      footer.textContent = '';
       renderExplorer(content);
       break;
     case 'search':
       title.textContent = 'Search';
-      footer.textContent = '';
       renderSearch(content);
       break;
     case 'outline':
       title.textContent = 'Outline';
-      footer.textContent = '';
       renderOutline(content);
       break;
     case 'extensions':
       title.textContent = 'Extensions';
-      footer.textContent = '';
       renderExtensions(content);
       break;
     case 'settings':
       title.textContent = 'Settings';
-      footer.textContent = '';
       renderSettings(content);
       break;
   }
@@ -752,7 +844,7 @@ function setupKeyboardShortcuts() {
       openCommandPalette();
     }
     // Ctrl+B: Toggle sidebar
-    if (ctrl && !e.shiftKey && e.key === 'b' && !isEditorFocused()) {
+    if (ctrl && !e.shiftKey && e.key === 'b') {
       e.preventDefault();
       toggleSidebar();
     }
@@ -851,6 +943,15 @@ const BUILTIN_COMMANDS = [
   { id: 'ext:manage', title: 'Manage Extensions', category: 'Extensions' },
   { id: 'ext:browse', title: 'Browse Extensions', category: 'Extensions' },
   { id: 'ext:reloadAll', title: 'Reload All Extensions', category: 'Extensions' },
+  { id: 'ext:docs:overview', title: 'Plugin Docs: Overview', category: 'Extensions' },
+  { id: 'ext:docs:create', title: 'Plugin Docs: Creating an Extension', category: 'Extensions' },
+  { id: 'ext:docs:manifest', title: 'Plugin Docs: Manifest Reference', category: 'Extensions' },
+  { id: 'ext:docs:api', title: 'Plugin Docs: Extension API Reference', category: 'Extensions' },
+  { id: 'ext:docs:commands', title: 'Plugin Docs: Commands & Menus', category: 'Extensions' },
+  { id: 'ext:docs:editor', title: 'Plugin Docs: Editor Interaction', category: 'Extensions' },
+  { id: 'ext:docs:events', title: 'Plugin Docs: Lifecycle Events', category: 'Extensions' },
+  { id: 'ext:docs:publish', title: 'Plugin Docs: Publishing & Distribution', category: 'Extensions' },
+  { id: 'ext:docs:example', title: 'Plugin Docs: Example Extension', category: 'Extensions' },
   { id: 'help:shortcuts', title: 'Keyboard Shortcuts', category: 'Help' },
   { id: 'help:about', title: 'About Cognition WP', category: 'Help' },
 ];
@@ -1005,6 +1106,15 @@ function executeCommandById(cmdId) {
     case 'ext:manage': showSidebarView('extensions'); break;
     case 'ext:browse': showNotification('info', 'Extension Gallery', 'Extension gallery coming soon!'); break;
     case 'ext:reloadAll': reloadAllExtensions(); break;
+    case 'ext:docs:overview': showPluginDocs('overview'); break;
+    case 'ext:docs:create': showPluginDocs('create'); break;
+    case 'ext:docs:manifest': showPluginDocs('manifest'); break;
+    case 'ext:docs:api': showPluginDocs('api'); break;
+    case 'ext:docs:commands': showPluginDocs('commands'); break;
+    case 'ext:docs:editor': showPluginDocs('editor'); break;
+    case 'ext:docs:events': showPluginDocs('events'); break;
+    case 'ext:docs:publish': showPluginDocs('publish'); break;
+    case 'ext:docs:example': showPluginDocs('example'); break;
     case 'help:shortcuts': showShortcutsHelp(); break;
     case 'help:about': showAboutDialog(); break;
     default:
@@ -1018,6 +1128,11 @@ function executeCommandById(cmdId) {
 // DOCUMENT OPERATIONS
 // ═══════════════════════════════════════════════════════════
 
+function updateDocTitle(title) {
+  const el = document.getElementById('doc-title');
+  if (el) el.textContent = title + ' — Cognition WP';
+}
+
 async function newDocument() {
   if (CognitionWP.isDirty && !confirm('Discard unsaved changes?')) return;
   CognitionWP.editor.innerHTML = '<h1>Untitled Document</h1><p></p>';
@@ -1027,9 +1142,7 @@ async function newDocument() {
   markClean();
   updateWordCount();
   CognitionWP.editor.focus();
-  // Update tab title
-  const tabTitle = document.querySelector('.tab-title');
-  if (tabTitle) tabTitle.textContent = 'Untitled';
+  updateDocTitle('Untitled');
 }
 
 async function openDocument(filePath) {
@@ -1041,9 +1154,7 @@ async function openDocument(filePath) {
   CognitionWP.docPath = result.filePath;
   CognitionWP.docFormat = result.format;
   markClean();
-
-  const tabTitle = document.querySelector('.tab-title');
-  if (tabTitle) tabTitle.textContent = result.title;
+  updateDocTitle(result.title);
 
   // Add to recent files
   const exists = CognitionWP.recentFiles.find(f => f.path === result.filePath);
@@ -1081,9 +1192,8 @@ async function saveAsDocument() {
   });
   if (!result) return;
   CognitionWP.docPath = result.filePath;
-  CognitionWP.docTitle = result.filePath.split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
-  const tabTitle = document.querySelector('.tab-title');
-  if (tabTitle) tabTitle.textContent = CognitionWP.docTitle;
+  CognitionWP.docTitle = result.filePath.split(/[\\\/]/).pop().replace(/\.[^.]+$/, '');
+  updateDocTitle(CognitionWP.docTitle);
   markClean();
   showNotification('info', 'Saved', CognitionWP.docTitle);
 }
@@ -1272,7 +1382,7 @@ function performSearch(query) {
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   CognitionWP.sidebarVisible = !CognitionWP.sidebarVisible;
-  sidebar.style.display = CognitionWP.sidebarVisible ? 'flex' : 'none';
+  sidebar.classList.toggle('hidden', !CognitionWP.sidebarVisible);
 }
 
 function toggleRightPanel() {
@@ -1545,6 +1655,295 @@ async function reloadAllExtensions() {
   }
   showNotification('info', 'Extensions', 'All extensions reloaded');
   CognitionWP.extensions = await window.cognition.extensions.list();
+}
+
+// ═══════════════════════════════════════════════════════════
+// PLUGIN DOCUMENTATION
+// ═══════════════════════════════════════════════════════════
+
+function showPluginDocs(topic) {
+  const docs = {
+    overview: {
+      title: 'Plugin Documentation — Overview',
+      body: `
+        <h2>Cognition WP Extension System</h2>
+        <p>Cognition WP supports a VS Code-inspired extension system. Extensions can add commands, interact with the editor, show notifications, create status bar items, and respond to document lifecycle events.</p>
+        <h3>Quick Start</h3>
+        <ol>
+          <li>Create a folder with a <code>package.json</code> manifest and a <code>main.js</code> entry file</li>
+          <li>Define activation events and commands in the manifest</li>
+          <li>Implement the <code>activate(context)</code> function in main.js</li>
+          <li>Install via Extensions menu → Install from VSIX, or place in the extensions directory</li>
+        </ol>
+        <h3>Topics</h3>
+        <ul>
+          <li><strong>Creating an Extension</strong> — step-by-step guide</li>
+          <li><strong>Manifest Reference</strong> — all package.json fields</li>
+          <li><strong>Extension API Reference</strong> — full context API</li>
+          <li><strong>Commands & Menus</strong> — registering commands</li>
+          <li><strong>Editor Interaction</strong> — reading/writing editor content</li>
+          <li><strong>Lifecycle Events</strong> — activation and deactivation</li>
+          <li><strong>Publishing & Distribution</strong> — packaging and sharing</li>
+          <li><strong>Example Extension</strong> — complete working example</li>
+        </ul>
+        <p>Extensions are stored in: <code>AppData/Roaming/cognition-wp/extensions/</code></p>
+      `,
+    },
+    create: {
+      title: 'Plugin Docs — Creating an Extension',
+      body: `
+        <h2>Creating an Extension</h2>
+        <h3>1. Create the folder structure</h3>
+        <pre>my-extension/
+├── package.json
+├── main.js
+└── icon.png (optional)</pre>
+        <h3>2. Write the manifest (package.json)</h3>
+        <pre>{
+  "name": "my-extension",
+  "displayName": "My Extension",
+  "publisher": "myorg",
+  "version": "1.0.0",
+  "description": "Does something cool",
+  "main": "main.js",
+  "activationEvents": ["onStartup"],
+  "commands": [
+    { "id": "sayHello", "title": "Say Hello" }
+  ]
+}</pre>
+        <h3>3. Write the entry file (main.js)</h3>
+        <pre>function activate(context) {
+  context.commands.registerCommand('sayHello', () => {
+    context.notifications.info('Hello from my extension!');
+  });
+  context.logger.info('Extension activated');
+}
+
+function deactivate() {}
+
+module.exports = { activate, deactivate };</pre>
+        <h3>4. Install</h3>
+        <p>Place the folder in the extensions directory, or zip it and install via Extensions → Install from VSIX.</p>
+      `,
+    },
+    manifest: {
+      title: 'Plugin Docs — Manifest Reference',
+      body: `
+        <h2>package.json Manifest Fields</h2>
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td>name</td><td>string</td><td>Yes</td><td>Extension identifier (lowercase, no spaces)</td></tr>
+            <tr><td>displayName</td><td>string</td><td>No</td><td>Human-readable name shown in UI</td></tr>
+            <tr><td>publisher</td><td>string</td><td>Yes</td><td>Publisher ID</td></tr>
+            <tr><td>version</td><td>string</td><td>Yes</td><td>Semver version</td></tr>
+            <tr><td>description</td><td>string</td><td>No</td><td>Short description</td></tr>
+            <tr><td>main</td><td>string</td><td>Yes</td><td>Entry file path (relative)</td></tr>
+            <tr><td>activationEvents</td><td>string[]</td><td>Yes</td><td>When to activate: "onStartup", "*", or custom events</td></tr>
+            <tr><td>commands</td><td>array</td><td>No</td><td>Commands to register (id + title)</td></tr>
+          </tbody>
+        </table>
+        <h3>Activation Events</h3>
+        <ul>
+          <li><code>"onStartup"</code> — activates when Cognition WP starts</li>
+          <li><code>"*"</code> — activates immediately (use sparingly)</li>
+        </ul>
+      `,
+    },
+    api: {
+      title: 'Plugin Docs — Extension API Reference',
+      body: `
+        <h2>Extension Context API</h2>
+        <p>The <code>activate(context)</code> function receives a context object with:</p>
+        <h3>context.extensionId</h3>
+        <p>String — the full ID (publisher.name)</p>
+        <h3>context.extensionPath</h3>
+        <p>String — absolute path to the extension directory</p>
+        <h3>context.commands</h3>
+        <pre>context.commands.registerCommand(id, handler)
+context.commands.executeCommand(id, ...args)
+context.commands.getCommands()</pre>
+        <h3>context.config</h3>
+        <pre>context.config.get('editor.fontSize')
+context.config.getAll()</pre>
+        <h3>context.notifications</h3>
+        <pre>context.notifications.info('message')
+context.notifications.warning('message')
+context.notifications.error('message')</pre>
+        <h3>context.statusBar</h3>
+        <pre>const item = context.statusBar.createItem('left', 0);
+item.setText('Hello');
+item.setTooltip('My extension');
+item.show();</pre>
+        <h3>context.logger</h3>
+        <pre>context.logger.info('...')
+context.logger.warn('...')
+context.logger.error('...')</pre>
+        <h3>context.fs</h3>
+        <pre>context.fs.readFileSync('file.txt')
+context.fs.writeFileSync('file.txt', 'content')
+context.fs.existsSync('file.txt')
+context.fs.readDirSync('.')</pre>
+      `,
+    },
+    commands: {
+      title: 'Plugin Docs — Commands & Menus',
+      body: `
+        <h2>Commands</h2>
+        <p>Commands are the primary way extensions add functionality. They appear in the Command Palette (Ctrl+Shift+P) and can be triggered by users or called programmatically.</p>
+        <h3>Registering a Command</h3>
+        <pre>context.commands.registerCommand('myCommand', () => {
+  context.notifications.info('Command executed!');
+});</pre>
+        <p>Command IDs are automatically prefixed with the extension ID if not already qualified. E.g., registering <code>'sayHello'</code> in extension <code>myorg.my-extension</code> becomes <code>myorg.my-extension.sayHello</code>.</p>
+        <h3>Executing Commands</h3>
+        <pre>await context.commands.executeCommand('otherext.commandId', arg1, arg2);</pre>
+        <h3>Manifest Commands</h3>
+        <p>Declare commands in package.json to make them visible in the palette:</p>
+        <pre>"commands": [
+  { "id": "sayHello", "title": "Say Hello" },
+  { "id": "formatText", "title": "Format Selected Text" }
+]</pre>
+      `,
+    },
+    editor: {
+      title: 'Plugin Docs — Editor Interaction',
+      body: `
+        <h2>Editor Interaction API</h2>
+        <h3>Get Editor Content</h3>
+        <pre>const html = await context.editor.getContent();</pre>
+        <h3>Set Editor Content</h3>
+        <pre>context.editor.setContent('&lt;h1&gt;Hello&lt;/h1&gt;');</pre>
+        <h3>Get Selection</h3>
+        <pre>const sel = await context.editor.getSelection();
+// { text: 'selected text', start: 0, end: 12 }</pre>
+        <h3>Insert Text at Cursor</h3>
+        <pre>context.editor.insertText('Inserted text');</pre>
+        <h3>Replace Selection</h3>
+        <pre>context.editor.replaceSelection('replacement text');</pre>
+        <h3>Scroll To Position</h3>
+        <pre>context.editor.scrollTo(500);</pre>
+      `,
+    },
+    events: {
+      title: 'Plugin Docs — Lifecycle Events',
+      body: `
+        <h2>Extension Lifecycle</h2>
+        <h3>Activation</h3>
+        <p>Extensions activate when their activation events fire. The <code>activate(context)</code> function is called.</p>
+        <h3>Document Events</h3>
+        <pre>context.documents.onDidOpen((doc) => {
+  context.logger.info('Document opened:', doc);
+});
+
+context.documents.onDidSave((doc) => {
+  context.logger.info('Document saved:', doc);
+});
+
+context.documents.onDidChange((changes) => {
+  context.logger.info('Document changed');
+});</pre>
+        <h3>Deactivation</h3>
+        <p>Implement <code>deactivate()</code> for cleanup:</p>
+        <pre>function deactivate() {
+  // Clean up resources
+  // Commands are automatically unregistered
+}
+
+module.exports = { activate, deactivate };</pre>
+      `,
+    },
+    publish: {
+      title: 'Plugin Docs — Publishing & Distribution',
+      body: `
+        <h2>Publishing Extensions</h2>
+        <h3>Packaging</h3>
+        <p>Zip your extension folder:</p>
+        <pre>my-extension/
+├── package.json
+├── main.js
+└── icon.png</pre>
+        <p>Rename the .zip to .cogx for Cognition Extension format.</p>
+        <h3>Installation Methods</h3>
+        <ol>
+          <li><strong>VSIX Install:</strong> Extensions → Install from VSIX → select .cogx or .zip file</li>
+          <li><strong>Manual Install:</strong> Copy the extension folder to <code>AppData/Roaming/cognition-wp/extensions/</code></li>
+          <li><strong>Gallery (coming soon):</strong> Publish to the Cognition Extension Registry</li>
+        </ol>
+        <h3>Extension Directory</h3>
+        <p>Extensions are stored at: <code>C:\\Users\\[user]\\AppData\\Roaming\\cognition-wp\\extensions\\</code></p>
+        <p>Each extension gets its own subfolder named <code>publisher.name</code>.</p>
+      `,
+    },
+    example: {
+      title: 'Plugin Docs — Example Extension',
+      body: `
+        <h2>Complete Example: Word Counter Extension</h2>
+        <h3>package.json</h3>
+        <pre>{
+  "name": "word-counter",
+  "displayName": "Word Counter",
+  "publisher": "cognition",
+  "version": "1.0.0",
+  "description": "Shows live word count in status bar",
+  "main": "main.js",
+  "activationEvents": ["onStartup"],
+  "commands": [
+    { "id": "showCount", "title": "Show Word Count" }
+  ]
+}</pre>
+        <h3>main.js</h3>
+        <pre>function activate(context) {
+  // Create a status bar item
+  const statusItem = context.statusBar.createItem('right', 10);
+  statusItem.setText('Words: 0');
+  statusItem.show();
+
+  // Register a command
+  context.commands.registerCommand('showCount', async () => {
+    const content = await context.editor.getContent();
+    const text = content.replace(/<[^>]+>/g, ' ');
+    const words = text.trim().split(/\\s+/).filter(w => w.length > 0);
+    context.notifications.info(words.length + ' words in document');
+  });
+
+  // Listen for document changes
+  context.documents.onDidChange(() => {
+    context.editor.getContent().then(html => {
+      const text = html.replace(/<[^>]+>/g, ' ');
+      const words = text.trim().split(/\\s+/).filter(w => w.length > 0);
+      statusItem.setText('Words: ' + words.length);
+    });
+  });
+
+  context.logger.info('Word Counter activated');
+}
+
+function deactivate() {
+  // Status bar item will be disposed automatically
+}
+
+module.exports = { activate, deactivate };</pre>
+      `,
+    },
+  };
+
+  const doc = docs[topic];
+  if (!doc) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box" style="width:700px;max-height:80vh;overflow-y:auto;">
+      <div class="modal-header">${doc.title}</div>
+      <div class="docs-content" style="font-size:14px;line-height:1.6;color:var(--fg-menu);">${doc.body}</div>
+      <div class="modal-buttons">
+        <button class="panel-btn primary" id="modal-close-docs">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#modal-close-docs').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
 // ═══════════════════════════════════════════════════════════

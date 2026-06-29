@@ -45,7 +45,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(menuBuilder.buildMenu());
 
   // Register IPC handlers
-  const ipcRegistry = new IPCMainRegistry(windowManager, extensionHost, configStore);
+  const ipcRegistry = new IPCMainRegistry(windowManager, extensionHost, configStore, pluginHost);
   ipcRegistry.registerAll();
 
   // Activate startup extensions

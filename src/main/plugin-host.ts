@@ -44,7 +44,6 @@ export class PluginHost extends EventEmitter {
     super();
     this.pluginsDir = path.join(app.getPath('userData'), 'plugins');
     this.ensurePluginsDir();
-    this.registerIPC();
   }
 
   private ensurePluginsDir() {
@@ -337,15 +336,6 @@ export class PluginHost extends EventEmitter {
       ipcMain.handleOnce(`${channel}:result`, (_, result: T) => { resolve(result); return null; });
       wins[0].webContents.send(channel);
     });
-  }
-
-  // ─── IPC ───────────────────────────────────────────────────
-
-  private registerIPC() {
-    ipcMain.handle('plugin:list', async () => this.discoverPlugins());
-    ipcMain.handle('plugin:start', async (_, id: string) => this.startPlugin(id));
-    ipcMain.handle('plugin:stop', async (_, id: string) => this.stopPlugin(id));
-    ipcMain.handle('plugin:running', async () => Array.from(this.plugins.keys()));
   }
 
   getRunningPlugins(): string[] {

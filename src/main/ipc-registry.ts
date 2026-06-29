@@ -6,14 +6,15 @@
 import { ipcMain, dialog, clipboard, shell, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as https from 'https';
+import { marked } from 'marked';
+import mammoth from 'mammoth';
 import { WindowManager } from './window-manager';
 import { ExtensionHost } from './extension-host';
 import { ConfigStore } from './config-store';
 import { ExportManager } from './export-manager';
+import { PluginHost } from './plugin-host';
 import { BUILTIN_THEMES } from '../shared/constants';
-// Lazy-loaded imports for file format support
-type MammothType = { convertToHtml: (input: { path: string }) => Promise<{ value: string }> };
-type MarkedType = { marked: (input: string) => string } | ((input: string) => string);
 
 export class IPCMainRegistry {
   private exportManager: ExportManager;
@@ -22,6 +23,7 @@ export class IPCMainRegistry {
     private windowManager: WindowManager,
     private extensionHost: ExtensionHost,
     private configStore: ConfigStore,
+    private pluginHost: PluginHost,
   ) {
     this.exportManager = new ExportManager();
   }
@@ -35,12 +37,18 @@ export class IPCMainRegistry {
     this.registerFileHandlers();
     this.registerWindowHandlers();
     this.registerUpdateHandlers();
+    this.registerPluginHandlers();
     this.registerPluginScaffoldHandler();
   }
 
   // ─── Document Operations ───────────────────────────────────
 
   private registerDocumentHandlers() {
+    ipcMain.handle('doc:new', async () => {
+      this.windowManager.send('doc:new');
+      return { success: true };
+    });
+
     ipcMain.handle('doc:open', async (_, filePath?: string) => {
       if (!filePath) {
         const result = await dialog.showOpenDialog({
@@ -82,9 +90,7 @@ export class IPCMainRegistry {
       } else if (ext === '.md' || ext === '.markdown') {
         const content = fs.readFileSync(filePath, 'utf-8');
         try {
-          const markedModule = require('marked');
-          const markedFn = (markedModule as any).marked || markedModule;
-          parsedContent = markedFn.parse(content);
+          parsedContent = marked.parse(content) as string;
         } catch {
           // Fallback: basic markdown to HTML
           parsedContent = content
@@ -108,7 +114,6 @@ export class IPCMainRegistry {
         format = 'plaintext';
       } else if (ext === '.doc' || ext === '.docx') {
         try {
-          const mammoth = require('mammoth') as MammothType;
           const result = await mammoth.convertToHtml({ path: filePath });
           parsedContent = result.value || '<p>(Empty document)</p>';
           format = 'word';
@@ -377,7 +382,6 @@ export class IPCMainRegistry {
   private registerUpdateHandlers() {
     ipcMain.handle('updates:check', async () => {
       try {
-        const https = require('https');
         const url = 'https://api.github.com/repos/Maq-Swarm/cognition-wp/releases/latest';
 
         const data: string = await new Promise((resolve, reject) => {
@@ -428,6 +432,15 @@ export class IPCMainRegistry {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     });
+  }
+
+  // ─── External Plugin Host (JSON-RPC) ────────────────────
+
+  private registerPluginHandlers() {
+    ipcMain.handle('plugin:list', async () => this.pluginHost.discoverPlugins());
+    ipcMain.handle('plugin:start', async (_, id: string) => this.pluginHost.startPlugin(id));
+    ipcMain.handle('plugin:stop', async (_, id: string) => this.pluginHost.stopPlugin(id));
+    ipcMain.handle('plugin:running', async () => this.pluginHost.getRunningPlugins());
   }
 
   // ─── Plugin Scaffolding ─────────────────────────────────

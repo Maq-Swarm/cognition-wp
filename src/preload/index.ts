@@ -137,6 +137,14 @@ const cognitionAPI = {
     addWord: (word: string) => ipcRenderer.invoke('spell:addWord', word),
     checkText: (text: string) => ipcRenderer.invoke('spell:checkText', text),
   },
+
+  // ─── External Plugin Host (JSON-RPC) ───────────────────────
+  plugins: {
+    list: () => ipcRenderer.invoke('plugin:list'),
+    start: (id: string) => ipcRenderer.invoke('plugin:start', id),
+    stop: (id: string) => ipcRenderer.invoke('plugin:stop', id),
+    running: () => ipcRenderer.invoke('plugin:running'),
+  },
 };
 
 // Expose the API to the renderer

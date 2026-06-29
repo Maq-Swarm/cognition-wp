@@ -6,6 +6,9 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as yaml from 'js-yaml';
+import { JSDOM } from 'jsdom';
+import JSZip from 'jszip';
 import { COGNITION_DOC_FORMAT, APP_VERSION } from '../shared/constants';
 
 export class ExportManager {
@@ -56,7 +59,7 @@ export class ExportManager {
           await this.exportPdf(filePath, content, title, window);
           break;
         case 'docx':
-          this.exportDocx(filePath, content, title);
+          await this.exportDocx(filePath, content, title);
           break;
         case 'doc':
           this.exportDoc(filePath, content, title);
@@ -109,7 +112,6 @@ export class ExportManager {
   }
 
   buildCogMarkdown(htmlContent: string, title: string, existingFilePath?: string): string {
-    const yaml = require('js-yaml');
     const stats = this.computeStats(htmlContent);
     const now = new Date();
     const markdownBody = this.htmlToMarkdown(htmlContent);
@@ -232,8 +234,6 @@ export class ExportManager {
   }
 
   private parseCogV3(raw: string): { frontmatter: Record<string, any>; html: string; markdown: string; isLegacy: boolean } | null {
-    const yaml = require('js-yaml');
-
     // Extract frontmatter between --- delimiters
     const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
     if (!match) return null;
@@ -262,7 +262,7 @@ export class ExportManager {
    * Handles: headings, bold, italic, code, links, images, lists,
    * tables, blockquotes, horizontal rules, and paragraphs.
    */
-  markdownToHtml(md: string): string {
+  public markdownToHtml(md: string): string {
     let html = md;
 
     // Escape HTML entities first
@@ -477,12 +477,9 @@ a { color: #000; text-decoration: underline; }
 
   // ─── DOCX (Office Open XML — minimal but valid) ──────────
 
-  private exportDocx(filePath: string, htmlContent: string, title: string) {
+  private async exportDocx(filePath: string, htmlContent: string, title: string): Promise<void> {
     const docxXml = this.buildDocx(htmlContent, title);
-    // DOCX is a ZIP file. We'll build it with Node's zlib.
-    const JSZip = require('jszip');
-    // jszip might not be available — use a minimal ZIP builder instead
-    const zip = this.createMinimalZip(docxXml);
+    const zip = await this.createDocxZip(docxXml);
     fs.writeFileSync(filePath, zip);
   }
 
@@ -528,12 +525,10 @@ ${paragraphs}
   private htmlToDocxParagraphs(html: string): string {
     let paragraphs = '';
     // Parse with a simple DOM
-    const { JSDOM } = require('jsdom');
-    let doc: Document;
+    let doc: Document | null;
     try {
       doc = new JSDOM(html).window.document;
     } catch {
-      // Fallback: create a temp element
       doc = null;
     }
 
@@ -682,136 +677,12 @@ ${paragraphs}
       .replace(/'/g, '&apos;');
   }
 
-  private createMinimalZip(files: Record<string, string>): Buffer {
-    // Use Node's built-in zlib + a minimal ZIP builder
-    // Since we can't guarantee JSZip, we'll use a simpler approach:
-    // Build a ZIP using the archiver package if available, or fallback to RTF for .docx
-    try {
-      const archiver = require('archiver');
-      // This won't work synchronously — we need a different approach
-    } catch {}
-
-    // Fallback: write as RTF with .docx extension won't work.
-    // Instead, let's build a proper ZIP using zlib
-    return this.buildZip(files);
-  }
-
-  private buildZip(files: Record<string, string>): Buffer {
-    const zlib = require('zlib');
-    const crc32 = require('zlib').crc32 || ((buf: Buffer) => {
-      // Simple CRC32 implementation
-      let crc = 0xFFFFFFFF;
-      for (let i = 0; i < buf.length; i++) {
-        crc = crc ^ buf[i];
-        for (let j = 0; j < 8; j++) {
-          crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
-        }
-      }
-      return (crc ^ 0xFFFFFFFF) >>> 0;
-    });
-
-    const localFiles: { name: string; data: Buffer; crc: number; compressed: Buffer }[] = [];
-    const centralDir: Buffer[] = [];
-    let offset = 0;
-
+  private async createDocxZip(files: Record<string, string>): Promise<Buffer> {
+    const zip = new JSZip();
     for (const [name, content] of Object.entries(files)) {
-      const nameBuf = Buffer.from(name, 'utf-8');
-      const data = Buffer.from(content, 'utf-8');
-      const crc = typeof crc32 === 'function' ? crc32(data) : this.crc32(data);
-      const compressed = zlib.deflateRawSync(data);
-
-      // Local file header
-      const localHeader = Buffer.alloc(30);
-      localHeader.writeUInt32LE(0x04034b50, 0); // signature
-      localHeader.writeUInt16LE(20, 4); // version needed
-      localHeader.writeUInt16LE(0, 6); // flags
-      localHeader.writeUInt16LE(8, 8); // compression: deflate
-      localHeader.writeUInt16LE(0, 10); // mod time
-      localHeader.writeUInt16LE(0, 12); // mod date
-      localHeader.writeUInt32LE(crc, 14); // crc32
-      localHeader.writeUInt32LE(compressed.length, 18); // compressed size
-      localHeader.writeUInt32LE(data.length, 22); // uncompressed size
-      localHeader.writeUInt16LE(nameBuf.length, 26); // filename length
-      localHeader.writeUInt16LE(0, 28); // extra field length
-
-      localFiles.push({ name: name, data, crc, compressed });
-
-      // Central directory entry
-      const cdHeader = Buffer.alloc(46);
-      cdHeader.writeUInt32LE(0x02014b50, 0); // signature
-      cdHeader.writeUInt16LE(20, 4); // version made by
-      cdHeader.writeUInt16LE(20, 6); // version needed
-      cdHeader.writeUInt16LE(0, 8); // flags
-      cdHeader.writeUInt16LE(8, 10); // compression
-      cdHeader.writeUInt16LE(0, 12); // mod time
-      cdHeader.writeUInt16LE(0, 14); // mod date
-      cdHeader.writeUInt32LE(crc, 16);
-      cdHeader.writeUInt32LE(compressed.length, 20);
-      cdHeader.writeUInt32LE(data.length, 24);
-      cdHeader.writeUInt16LE(nameBuf.length, 28);
-      cdHeader.writeUInt16LE(0, 30); // extra
-      cdHeader.writeUInt16LE(0, 32); // comment
-      cdHeader.writeUInt16LE(0, 34); // disk number
-      cdHeader.writeUInt16LE(0, 36); // internal attrs
-      cdHeader.writeUInt32LE(0, 38); // external attrs
-      cdHeader.writeUInt32LE(offset, 42); // offset of local header
-
-      centralDir.push(Buffer.concat([cdHeader, nameBuf]));
-
-      offset += localHeader.length + nameBuf.length + compressed.length;
+      zip.file(name, content);
     }
-
-    // Build the full ZIP
-    const parts: Buffer[] = [];
-    for (let i = 0; i < localFiles.length; i++) {
-      const lf = localFiles[i];
-      const nameBuf = Buffer.from(lf.name, 'utf-8');
-      const localHeader = Buffer.alloc(30);
-      localHeader.writeUInt32LE(0x04034b50, 0);
-      localHeader.writeUInt16LE(20, 4);
-      localHeader.writeUInt16LE(0, 6);
-      localHeader.writeUInt16LE(8, 8);
-      localHeader.writeUInt16LE(0, 10);
-      localHeader.writeUInt16LE(0, 12);
-      localHeader.writeUInt32LE(lf.crc, 14);
-      localHeader.writeUInt32LE(lf.compressed.length, 18);
-      localHeader.writeUInt32LE(lf.data.length, 22);
-      localHeader.writeUInt16LE(nameBuf.length, 26);
-      localHeader.writeUInt16LE(0, 28);
-      parts.push(localHeader, nameBuf, lf.compressed);
-    }
-
-    const cdOffset = offset;
-    let cdSize = 0;
-    for (const cd of centralDir) {
-      parts.push(cd);
-      cdSize += cd.length;
-    }
-
-    // End of central directory
-    const eocd = Buffer.alloc(22);
-    eocd.writeUInt32LE(0x06054b50, 0);
-    eocd.writeUInt16LE(0, 4); // disk
-    eocd.writeUInt16LE(0, 6); // disk with CD
-    eocd.writeUInt16LE(localFiles.length, 8); // entries on this disk
-    eocd.writeUInt16LE(localFiles.length, 10); // total entries
-    eocd.writeUInt32LE(cdSize, 12);
-    eocd.writeUInt32LE(cdOffset, 16);
-    eocd.writeUInt16LE(0, 20); // comment length
-    parts.push(eocd);
-
-    return Buffer.concat(parts);
-  }
-
-  private crc32(buf: Buffer): number {
-    let crc = 0xFFFFFFFF;
-    for (let i = 0; i < buf.length; i++) {
-      crc = crc ^ buf[i];
-      for (let j = 0; j < 8; j++) {
-        crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
-      }
-    }
-    return (crc ^ 0xFFFFFFFF) >>> 0;
+    return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
   }
 
   // ─── DOC (RTF format — universally compatible with Word) ─
@@ -905,9 +776,9 @@ ${paragraphs}
     md = md.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (match, content) => {
       let table = '\n';
       const rows = content.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-      rows.forEach((row, i) => {
+      rows.forEach((row: string, i: number) => {
         const cells = (row.match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [])
-          .map(c => c.replace(/<[^>]+>/g, '').trim());
+          .map((c: string) => c.replace(/<[^>]+>/g, '').trim());
         table += '| ' + cells.join(' | ') + ' |\n';
         if (i === 0) {
           table += '| ' + cells.map(() => '---').join(' | ') + ' |\n';

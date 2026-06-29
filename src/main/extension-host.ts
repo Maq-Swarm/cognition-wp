@@ -4,9 +4,11 @@
  * and lifecycle of all extensions. Inspired by VS Code's extension host.
  */
 
-import { app, ipcMain, BrowserWindow, dialog } from 'electron';
+import { app, ipcMain, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
+import AdmZip from 'adm-zip';
 import { ConfigStore } from './config-store';
 import { ExtensionManifest, InstalledExtension, ExtensionState, ActivationEvent, RegisteredCommand } from '../shared/types';
 
@@ -399,12 +401,9 @@ export class ExtensionHost {
    * .cogwp is the Cognition WP plugin package format, similar to .vsix for VS Code.
    */
   private async installFromArchive(archivePath: string): Promise<InstalledExtension> {
-    const os = require('os');
     const tmpDir = path.join(os.tmpdir(), `cogwp-install-${Date.now()}`);
 
     try {
-      // Extract the ZIP archive
-      const AdmZip = require('adm-zip');
       const zip = new AdmZip(archivePath);
       zip.extractAllTo(tmpDir, true);
 
@@ -457,73 +456,16 @@ export class ExtensionHost {
       console.log(`[ExtensionHost] Installed from .cogwp: ${extensionId}`);
       return installed;
     } catch (err) {
-      // Fallback: try treating as a directory (not an archive)
       if (fs.existsSync(archivePath) && fs.statSync(archivePath).isDirectory()) {
         return this.installExtension(archivePath);
       }
-      // Fallback 2: try built-in zlib extraction
-      try {
-        return await this.extractZipNative(archivePath, tmpDir);
-      } catch (err2) {
-        throw new Error(`Failed to install .cogwp: ${err2 instanceof Error ? err2.message : String(err2)}`);
-      }
+      throw new Error(
+        `Failed to install .cogwp: ${err instanceof Error ? err.message : String(err)}`,
+      );
     } finally {
       // Clean up temp dir
       try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
     }
-  }
-
-  /**
-   * Fallback ZIP extraction using Node's built-in zlib (no external deps).
-   */
-  private async extractZipNative(zipPath: string, targetDir: string): Promise<InstalledExtension> {
-    const { execSync } = require('child_process');
-    fs.mkdirSync(targetDir, { recursive: true });
-
-    // Use PowerShell's Expand-Archive on Windows, or unzip on Linux/Mac
-    if (process.platform === 'win32') {
-      execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${targetDir}' -Force"`, { timeout: 30000 });
-    } else {
-      execSync(`unzip -o '${zipPath}' -d '${targetDir}'`, { timeout: 30000 });
-    }
-
-    // Find manifest
-    const findManifest = (dir: string): string | null => {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isFile() && entry.name === 'package.json') return fullPath;
-        if (entry.isDirectory()) {
-          const found = findManifest(fullPath);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const manifestPath = findManifest(targetDir);
-    if (!manifestPath) throw new Error('No package.json found in archive');
-
-    const extensionDir = path.dirname(manifestPath);
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as ExtensionManifest;
-    const extensionId = `${manifest.publisher}.${manifest.name}`;
-    const finalDir = path.join(this.extensionsDir, extensionId.replace(/\s/g, '-').toLowerCase());
-
-    if (fs.existsSync(finalDir)) fs.rmSync(finalDir, { recursive: true, force: true });
-    fs.mkdirSync(finalDir, { recursive: true });
-    this.copyDir(extensionDir, finalDir);
-
-    const installed: InstalledExtension = {
-      id: extensionId,
-      manifest,
-      state: 'installed',
-      installPath: finalDir,
-      installedAt: Date.now(),
-      lastActivated: null,
-      error: null,
-    };
-    this.extensions.set(extensionId, installed);
-    return installed;
   }
 
   async uninstallExtension(id: string): Promise<void> {

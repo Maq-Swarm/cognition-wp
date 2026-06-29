@@ -125,7 +125,7 @@ Or manually:
 - **Main Process**: WindowManager, MenuBuilder, IPCRegistry, ExtensionHost, PluginHost, ExportManager, ConfigStore, UpdateChecker
 - **Preload**: Secure contextBridge (contextIsolation, no nodeIntegration, sandboxed)
 - **Renderer**: HTML/CSS/JS editor with full formatting toolbar, templates, spellcheck
-- **Zero runtime dependencies** — config stored as plain JSON, no external libs needed at runtime
+- **Declared runtime dependencies** — `js-yaml` (.cog), `jszip`/`jsdom` (docx export), `adm-zip` (.cogwp install), `marked`/`mammoth` (import); config stored as plain JSON
 
 ## License
 

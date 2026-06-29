@@ -11,11 +11,12 @@ import { IPCMainRegistry } from './ipc-registry';
 import { ExtensionHost } from './extension-host';
 import { ConfigStore } from './config-store';
 import { MenuBuilder } from './menu-builder';
-import { ExportManager } from './export-manager';
+import { PluginHost } from './plugin-host';
 
 let mainWindow: BrowserWindow | null = null;
 let windowManager: WindowManager;
 let extensionHost: ExtensionHost;
+let pluginHost: PluginHost | null = null;
 let configStore: ConfigStore;
 
 // Prevent multiple instances
@@ -32,6 +33,9 @@ app.whenReady().then(async () => {
   extensionHost = new ExtensionHost(configStore);
   await extensionHost.initialize();
 
+  // Initialize external plugin host (JSON-RPC over stdio)
+  pluginHost = new PluginHost();
+
   // Create window manager
   windowManager = new WindowManager(configStore, extensionHost);
   mainWindow = windowManager.createMainWindow();
@@ -41,7 +45,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(menuBuilder.buildMenu());
 
   // Register IPC handlers
-  const ipcRegistry = new IPCMainRegistry(windowManager, extensionHost, configStore);
+  const ipcRegistry = new IPCMainRegistry(windowManager, extensionHost, configStore, pluginHost);
   ipcRegistry.registerAll();
 
   // Activate startup extensions
@@ -57,9 +61,14 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  pluginHost?.stopAllPlugins();
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  pluginHost?.stopAllPlugins();
 });
 
 app.on('activate', () => {

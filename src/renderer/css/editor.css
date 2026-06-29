@@ -293,8 +293,41 @@ body.focus-mode #editor-page {
 }
 
 /* ── Spell Check ────────────────────────────────────────── */
-#editor-page[spellcheck="true"] ::selection {
-  /* spellcheck is handled natively */
+/* Custom spellcheck — red squiggly underline for misspelled words */
+.cog-misspelled {
+  text-decoration: underline wavy var(--error-color, #e74c3c);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  cursor: context-menu;
+}
+
+/* Spellcheck suggestion items in context menu */
+.context-menu-item.spell-suggestion {
+  font-weight: 600;
+  color: var(--accent-color, #6c5ce7);
+}
+
+.context-menu-spell-header {
+  font-size: 11px;
+  opacity: 0.6;
+  padding: 4px 16px 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Loading indicator when spellcheck is initializing */
+.cog-spell-loading {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-color, #ddd);
+  border-top-color: var(--accent-color, #6c5ce7);
+  border-radius: 50%;
+  animation: cog-spin 0.6s linear infinite;
+}
+
+@keyframes cog-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── Scrollbar ──────────────────────────────────────────── */

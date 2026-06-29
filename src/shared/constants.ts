@@ -16,6 +16,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   'editor.tabSize': 4,
   'editor.wordWrap': true,
   'editor.spellcheck': true,
+  'editor.customDictionary': [],
   'editor.autoSave': false,
   'editor.autoSaveDelay': 1000,
   'editor.showLineNumbers': false,

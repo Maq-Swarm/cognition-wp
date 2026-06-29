@@ -176,7 +176,7 @@
     <div id="editor-area">
       <div id="editor-wrapper">
         <div id="editor-scroll">
-          <div id="editor-page" contenteditable="true" spellcheck="true">
+          <div id="editor-page" contenteditable="true" spellcheck="false" data-spellcheck="true">
             <h1>Welcome to Cognition WP</h1>
             <p>The open-source, extensible word processor. Start typing to begin your document.</p>
             <p>Cognition WP is an <em>open-source</em>, <u>extensible</u> word processor built on Electron and TypeScript. It features a full extension system for adding new capabilities.</p>
@@ -265,6 +265,7 @@
   </div>
 
   <!-- ─── Scripts ────────────────────────────────────── -->
+  <script src="spellsolver.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

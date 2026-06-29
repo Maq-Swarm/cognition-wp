@@ -130,6 +130,14 @@ const cognitionAPI = {
     check: () => ipcRenderer.invoke('updates:check'),
     downloadAndInstall: (url: string) => ipcRenderer.invoke('updates:downloadAndInstall', url),
   },
+
+  // ─── External Plugin Host (JSON-RPC) ───────────────────────
+  plugins: {
+    list: () => ipcRenderer.invoke('plugin:list'),
+    start: (id: string) => ipcRenderer.invoke('plugin:start', id),
+    stop: (id: string) => ipcRenderer.invoke('plugin:stop', id),
+    running: () => ipcRenderer.invoke('plugin:running'),
+  },
 };
 
 // Expose the API to the renderer

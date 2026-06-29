@@ -4,9 +4,11 @@
  * and lifecycle of all extensions. Inspired by VS Code's extension host.
  */
 
-import { app, ipcMain, BrowserWindow, dialog } from 'electron';
+import { app, ipcMain, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
+import AdmZip from 'adm-zip';
 import { ConfigStore } from './config-store';
 import { ExtensionManifest, InstalledExtension, ExtensionState, ActivationEvent, RegisteredCommand } from '../shared/types';
 
@@ -399,12 +401,9 @@ export class ExtensionHost {
    * .cogwp is the Cognition WP plugin package format, similar to .vsix for VS Code.
    */
   private async installFromArchive(archivePath: string): Promise<InstalledExtension> {
-    const os = require('os');
     const tmpDir = path.join(os.tmpdir(), `cogwp-install-${Date.now()}`);
 
     try {
-      // Extract the ZIP archive
-      const AdmZip = require('adm-zip');
       const zip = new AdmZip(archivePath);
       zip.extractAllTo(tmpDir, true);
 

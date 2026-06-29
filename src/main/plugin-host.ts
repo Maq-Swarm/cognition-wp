@@ -295,7 +295,7 @@ export class PluginHost extends EventEmitter {
       instance.pendingRequests.set(id, { resolve, reject });
 
       const message = JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n';
-      instance.process?.stdin.write(message);
+      instance.process?.stdin?.write(message);
 
       // Timeout after 30 seconds
       setTimeout(() => {
@@ -309,7 +309,7 @@ export class PluginHost extends EventEmitter {
 
   private sendNotification(instance: PluginInstance, method: string, params: unknown) {
     const message = JSON.stringify({ jsonrpc: '2.0', method, params }) + '\n';
-    instance.process?.stdin.write(message);
+    instance.process?.stdin?.write(message);
   }
 
   private sendResponse(instance: PluginInstance, id: number, result: unknown, error: string | null) {
@@ -319,7 +319,7 @@ export class PluginHost extends EventEmitter {
     } else {
       msg.result = result;
     }
-    instance.process?.stdin.write(JSON.stringify(msg) + '\n');
+    instance.process?.stdin?.write(JSON.stringify(msg) + '\n');
   }
 
   // ─── Renderer Communication ─────────────────────────────────

@@ -6,6 +6,9 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as yaml from 'js-yaml';
+import { JSDOM } from 'jsdom';
+import JSZip from 'jszip';
 import { COGNITION_DOC_FORMAT, APP_VERSION } from '../shared/constants';
 
 export class ExportManager {
@@ -56,7 +59,7 @@ export class ExportManager {
           await this.exportPdf(filePath, content, title, window);
           break;
         case 'docx':
-          this.exportDocx(filePath, content, title);
+          await this.exportDocx(filePath, content, title);
           break;
         case 'doc':
           this.exportDoc(filePath, content, title);
@@ -109,7 +112,6 @@ export class ExportManager {
   }
 
   buildCogMarkdown(htmlContent: string, title: string, existingFilePath?: string): string {
-    const yaml = require('js-yaml');
     const stats = this.computeStats(htmlContent);
     const now = new Date();
     const markdownBody = this.htmlToMarkdown(htmlContent);
@@ -232,8 +234,6 @@ export class ExportManager {
   }
 
   private parseCogV3(raw: string): { frontmatter: Record<string, any>; html: string; markdown: string; isLegacy: boolean } | null {
-    const yaml = require('js-yaml');
-
     // Extract frontmatter between --- delimiters
     const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
     if (!match) return null;
@@ -262,7 +262,7 @@ export class ExportManager {
    * Handles: headings, bold, italic, code, links, images, lists,
    * tables, blockquotes, horizontal rules, and paragraphs.
    */
-  markdownToHtml(md: string): string {
+  public markdownToHtml(md: string): string {
     let html = md;
 
     // Escape HTML entities first
@@ -477,12 +477,9 @@ a { color: #000; text-decoration: underline; }
 
   // ─── DOCX (Office Open XML — minimal but valid) ──────────
 
-  private exportDocx(filePath: string, htmlContent: string, title: string) {
+  private async exportDocx(filePath: string, htmlContent: string, title: string): Promise<void> {
     const docxXml = this.buildDocx(htmlContent, title);
-    // DOCX is a ZIP file. We'll build it with Node's zlib.
-    const JSZip = require('jszip');
-    // jszip might not be available — use a minimal ZIP builder instead
-    const zip = this.createMinimalZip(docxXml);
+    const zip = await this.createDocxZip(docxXml);
     fs.writeFileSync(filePath, zip);
   }
 
@@ -528,12 +525,10 @@ ${paragraphs}
   private htmlToDocxParagraphs(html: string): string {
     let paragraphs = '';
     // Parse with a simple DOM
-    const { JSDOM } = require('jsdom');
-    let doc: Document;
+    let doc: Document | null;
     try {
       doc = new JSDOM(html).window.document;
     } catch {
-      // Fallback: create a temp element
       doc = null;
     }
 
@@ -682,18 +677,12 @@ ${paragraphs}
       .replace(/'/g, '&apos;');
   }
 
-  private createMinimalZip(files: Record<string, string>): Buffer {
-    // Use Node's built-in zlib + a minimal ZIP builder
-    // Since we can't guarantee JSZip, we'll use a simpler approach:
-    // Build a ZIP using the archiver package if available, or fallback to RTF for .docx
-    try {
-      const archiver = require('archiver');
-      // This won't work synchronously — we need a different approach
-    } catch {}
-
-    // Fallback: write as RTF with .docx extension won't work.
-    // Instead, let's build a proper ZIP using zlib
-    return this.buildZip(files);
+  private async createDocxZip(files: Record<string, string>): Promise<Buffer> {
+    const zip = new JSZip();
+    for (const [name, content] of Object.entries(files)) {
+      zip.file(name, content);
+    }
+    return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
   }
 
   private buildZip(files: Record<string, string>): Buffer {
@@ -905,9 +894,9 @@ ${paragraphs}
     md = md.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (match, content) => {
       let table = '\n';
       const rows = content.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-      rows.forEach((row, i) => {
+      rows.forEach((row: string, i: number) => {
         const cells = (row.match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [])
-          .map(c => c.replace(/<[^>]+>/g, '').trim());
+          .map((c: string) => c.replace(/<[^>]+>/g, '').trim());
         table += '| ' + cells.join(' | ') + ' |\n';
         if (i === 0) {
           table += '| ' + cells.map(() => '---').join(' | ') + ' |\n';

@@ -4,7 +4,7 @@
  * and lifecycle of all extensions. Inspired by VS Code's extension host.
  */
 
-import { app, ipcMain, BrowserWindow } from 'electron';
+import { app, ipcMain, BrowserWindow, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ConfigStore } from './config-store';
@@ -209,6 +209,47 @@ export class ExtensionHost {
         },
       },
 
+      // Toolbar buttons (SVG icons)
+      toolbar: {
+        /**
+         * Register a toolbar button with an SVG icon.
+         * The SVG file should be in the extension directory.
+         * When clicked, the registered command is executed.
+         */
+        registerButton(buttonId: string, options: {
+          label: string;
+          tooltip: string;
+          icon: string;        // SVG file path relative to extension dir, or inline SVG string
+          command: string;     // Command to execute when clicked
+          position?: 'left' | 'right'; // Where in the toolbar to place it
+        }): Disposable {
+          const fullId = buttonId.includes('.') ? buttonId : `${ext.id}.${buttonId}`;
+          let svgContent = options.icon;
+
+          // If icon is a file path, read the SVG file
+          if (!options.icon.trim().startsWith('<svg') && !options.icon.trim().startsWith('<?xml')) {
+            const iconPath = path.resolve(ext.installPath, options.icon);
+            if (fs.existsSync(iconPath)) {
+              svgContent = fs.readFileSync(iconPath, 'utf-8');
+            } else {
+              console.warn(`[ExtensionHost] SVG icon not found: ${iconPath}`);
+              svgContent = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>`;
+            }
+          }
+
+          self.notifyRenderer('toolbar:addButton', {
+            id: fullId,
+            label: options.label,
+            tooltip: options.tooltip,
+            svg: svgContent,
+            command: options.command,
+            position: options.position || 'right',
+          });
+
+          return { dispose: () => self.notifyRenderer('toolbar:removeButton', { id: fullId }) };
+        },
+      },
+
       // Notifications
       notifications: {
         info(message: string): void {
@@ -317,6 +358,11 @@ export class ExtensionHost {
   }
 
   async installExtension(extensionPath: string): Promise<InstalledExtension> {
+    // Handle .cogwp files (ZIP archives containing the extension)
+    if (extensionPath.endsWith('.cogwp') || extensionPath.endsWith('.zip')) {
+      return this.installFromArchive(extensionPath);
+    }
+
     const manifestPath = path.join(extensionPath, 'package.json');
     if (!fs.existsSync(manifestPath)) {
       throw new Error('Invalid extension: package.json not found');
@@ -345,6 +391,138 @@ export class ExtensionHost {
 
     this.extensions.set(extensionId, installed);
     console.log(`[ExtensionHost] Installed: ${extensionId}`);
+    return installed;
+  }
+
+  /**
+   * Install from a .cogwp archive (ZIP format).
+   * .cogwp is the Cognition WP plugin package format, similar to .vsix for VS Code.
+   */
+  private async installFromArchive(archivePath: string): Promise<InstalledExtension> {
+    const os = require('os');
+    const tmpDir = path.join(os.tmpdir(), `cogwp-install-${Date.now()}`);
+
+    try {
+      // Extract the ZIP archive
+      const AdmZip = require('adm-zip');
+      const zip = new AdmZip(archivePath);
+      zip.extractAllTo(tmpDir, true);
+
+      // Find the manifest in the extracted directory
+      const findManifest = (dir: string): string | null => {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isFile() && entry.name === 'package.json') {
+            return fullPath;
+          }
+          if (entry.isDirectory()) {
+            const found = findManifest(fullPath);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const manifestPath = findManifest(tmpDir);
+      if (!manifestPath) {
+        throw new Error('Invalid .cogwp: no package.json found in archive');
+      }
+
+      const extensionDir = path.dirname(manifestPath);
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as ExtensionManifest;
+      const extensionId = `${manifest.publisher}.${manifest.name}`;
+      const targetDir = path.join(this.extensionsDir, extensionId.replace(/\s/g, '-').toLowerCase());
+
+      // Remove old version if exists
+      if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+      }
+
+      // Copy extracted files to extensions directory
+      fs.mkdirSync(targetDir, { recursive: true });
+      this.copyDir(extensionDir, targetDir);
+
+      const installed: InstalledExtension = {
+        id: extensionId,
+        manifest,
+        state: 'installed',
+        installPath: targetDir,
+        installedAt: Date.now(),
+        lastActivated: null,
+        error: null,
+      };
+
+      this.extensions.set(extensionId, installed);
+      console.log(`[ExtensionHost] Installed from .cogwp: ${extensionId}`);
+      return installed;
+    } catch (err) {
+      // Fallback: try treating as a directory (not an archive)
+      if (fs.existsSync(archivePath) && fs.statSync(archivePath).isDirectory()) {
+        return this.installExtension(archivePath);
+      }
+      // Fallback 2: try built-in zlib extraction
+      try {
+        return await this.extractZipNative(archivePath, tmpDir);
+      } catch (err2) {
+        throw new Error(`Failed to install .cogwp: ${err2 instanceof Error ? err2.message : String(err2)}`);
+      }
+    } finally {
+      // Clean up temp dir
+      try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    }
+  }
+
+  /**
+   * Fallback ZIP extraction using Node's built-in zlib (no external deps).
+   */
+  private async extractZipNative(zipPath: string, targetDir: string): Promise<InstalledExtension> {
+    const { execSync } = require('child_process');
+    fs.mkdirSync(targetDir, { recursive: true });
+
+    // Use PowerShell's Expand-Archive on Windows, or unzip on Linux/Mac
+    if (process.platform === 'win32') {
+      execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${targetDir}' -Force"`, { timeout: 30000 });
+    } else {
+      execSync(`unzip -o '${zipPath}' -d '${targetDir}'`, { timeout: 30000 });
+    }
+
+    // Find manifest
+    const findManifest = (dir: string): string | null => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isFile() && entry.name === 'package.json') return fullPath;
+        if (entry.isDirectory()) {
+          const found = findManifest(fullPath);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const manifestPath = findManifest(targetDir);
+    if (!manifestPath) throw new Error('No package.json found in archive');
+
+    const extensionDir = path.dirname(manifestPath);
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as ExtensionManifest;
+    const extensionId = `${manifest.publisher}.${manifest.name}`;
+    const finalDir = path.join(this.extensionsDir, extensionId.replace(/\s/g, '-').toLowerCase());
+
+    if (fs.existsSync(finalDir)) fs.rmSync(finalDir, { recursive: true, force: true });
+    fs.mkdirSync(finalDir, { recursive: true });
+    this.copyDir(extensionDir, finalDir);
+
+    const installed: InstalledExtension = {
+      id: extensionId,
+      manifest,
+      state: 'installed',
+      installPath: finalDir,
+      installedAt: Date.now(),
+      lastActivated: null,
+      error: null,
+    };
+    this.extensions.set(extensionId, installed);
     return installed;
   }
 
@@ -455,6 +633,15 @@ export interface ExtensionContext {
   };
   statusBar: {
     createItem(alignment: 'left' | 'right', priority: number): StatusBarItemHandle;
+  };
+  toolbar: {
+    registerButton(buttonId: string, options: {
+      label: string;
+      tooltip: string;
+      icon: string;
+      command: string;
+      position?: 'left' | 'right';
+    }): Disposable;
   };
   notifications: {
     info(message: string): void;

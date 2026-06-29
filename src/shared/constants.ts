@@ -3,8 +3,11 @@
  */
 
 export const APP_NAME = 'Cognition WP';
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 export const APP_PUBLISHER = 'Maq-Swarm';
+export const GITHUB_REPO = 'Maq-Swarm/cognition-wp';
+export const GITHUB_RELEASES_URL = 'https://github.com/Maq-Swarm/cognition-wp/releases';
+export const GITHUB_LATEST_API = 'https://api.github.com/repos/Maq-Swarm/cognition-wp/releases/latest';
 
 export const EXTENSIONS_DIR = 'extensions';
 export const CONFIG_FILE = 'cognition-wp-config.json';
@@ -50,6 +53,14 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   'extensions.allowUntrusted': false,
   'extensions.galleryEnabled': true,
   'extensions.galleryUrl': 'https://registry.cognitionwp.org/api',
+
+  'updates.autoCheck': true,
+  'updates.channel': 'stable',
+  'updates.lastChecked': null,
+  'updates.lastVersion': null,
+
+  'plugins.developerMode': false,
+  'plugins.format': '.cogwp',
 };
 
 export const COGNITION_DOC_FORMAT = {
@@ -58,6 +69,16 @@ export const COGNITION_DOC_FORMAT = {
   supportedVersions: ['1.0.0', '2.0.0', '2.1.0', '3.0.0'],
   // v3.0.0: Markdown body + YAML frontmatter (human & AI readable)
   // v2.x:   JSON wrapper (legacy, still readable for backward compat)
+} as const;
+
+export const PLUGIN_FORMAT = {
+  extension: '.cogwp',
+  description: 'Cognition WP Plugin Package',
+  // .cogwp files are ZIP archives containing:
+  //   package.json (manifest)
+  //   main.js (entry point)
+  //   icon.svg (toolbar icon, if applicable)
+  //   additional resources
 } as const;
 
 export const BUILTIN_THEMES = [

@@ -54,7 +54,7 @@ export class WindowManager {
         sandbox: false,
         spellcheck: true,
         additionalArguments: [
-          `--cognition-version=1.0.0`,
+          `--cognition-version=1.1.0`,
           `--cognition-platform=${process.platform}`,
         ],
       },

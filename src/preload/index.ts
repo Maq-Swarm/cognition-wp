@@ -40,6 +40,7 @@ const cognitionAPI = {
     onEvent: (callback: (event: string, data: unknown) => void) => {
       ipcRenderer.on('ext:event', (_, event, data) => callback(event, data));
     },
+    scaffoldPlugin: () => ipcRenderer.invoke('ext:scaffoldPlugin'),
   },
 
   // ─── Configuration ────────────────────────────────────────
@@ -95,6 +96,7 @@ const cognitionAPI = {
       'insert:heading', 'insert:bold', 'insert:italic', 'insert:underline',
       'insert:strikethrough', 'insert:link', 'insert:image', 'insert:table',
       'insert:codeBlock', 'insert:quote', 'insert:hr', 'insert:list',
+      'insert:template',
       'format:align', 'format:fontSize', 'format:subscript', 'format:superscript',
       'format:highlight', 'format:clear',
       'view:toggleSidebar', 'view:toggleOutline', 'view:toggleFocusMode',
@@ -103,9 +105,10 @@ const cognitionAPI = {
       'editor:find', 'editor:replace', 'editor:findNext', 'editor:findPrev',
       'editor:getContent', 'editor:getSelection',
       'tools:wordCount', 'tools:settings',
-      'ext:installRequest', 'ext:browse', 'ext:manage', 'ext:reloadAll', 'ext:createNew',
+      'ext:installRequest', 'ext:browse', 'ext:manage', 'ext:reloadAll', 'ext:createNew', 'ext:docs',
       'config:changed', 'theme:changed',
       'statusBar:update', 'statusBar:tooltip', 'statusBar:show', 'statusBar:hide', 'statusBar:dispose',
+      'toolbar:addButton', 'toolbar:removeButton',
       'notification:info', 'notification:warning', 'notification:error',
       'help:shortcuts', 'help:checkUpdates',
     ];
@@ -120,6 +123,12 @@ const cognitionAPI = {
     electron: process.versions.electron,
     node: process.versions.node,
     chrome: process.versions.chrome,
+  },
+
+  // ─── Update Checker ────────────────────────────────────────
+  updates: {
+    check: () => ipcRenderer.invoke('updates:check'),
+    downloadAndInstall: (url: string) => ipcRenderer.invoke('updates:downloadAndInstall', url),
   },
 };
 

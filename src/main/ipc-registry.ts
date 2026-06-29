@@ -34,6 +34,8 @@ export class IPCMainRegistry {
     this.registerClipboardHandlers();
     this.registerFileHandlers();
     this.registerWindowHandlers();
+    this.registerUpdateHandlers();
+    this.registerPluginScaffoldHandler();
   }
 
   // ─── Document Operations ───────────────────────────────────
@@ -366,6 +368,137 @@ export class IPCMainRegistry {
       const win = this.windowManager.getMainWindow();
       if (win) {
         win.setFullScreen(!win.isFullScreen());
+      }
+    });
+  }
+
+  // ─── Update Checking ─────────────────────────────────────
+
+  private registerUpdateHandlers() {
+    ipcMain.handle('updates:check', async () => {
+      try {
+        const https = require('https');
+        const url = 'https://api.github.com/repos/Maq-Swarm/cognition-wp/releases/latest';
+
+        const data: string = await new Promise((resolve, reject) => {
+          const req = https.get(url, {
+            headers: {
+              'User-Agent': 'cognition-wp',
+              'Accept': 'application/vnd.github.v3+json',
+            },
+          }, (res: any) => {
+            let body = '';
+            res.on('data', (chunk: string) => body += chunk);
+            res.on('end', () => resolve(body));
+          });
+          req.on('error', reject);
+          req.setTimeout(10000, () => req.destroy(new Error('timeout')));
+        });
+
+        const release = JSON.parse(data);
+        const latestVersion = release.tag_name?.replace(/^v/, '') || '';
+        const downloadUrl = release.assets?.find((a: any) =>
+          a.name.endsWith('.exe') || a.name.endsWith('Setup.exe')
+        )?.browser_download_url || release.html_url;
+
+        return {
+          currentVersion: '1.1.0',
+          latestVersion,
+          updateAvailable: latestVersion && latestVersion !== '1.1.0',
+          downloadUrl,
+          releaseNotes: release.body || '',
+          releaseUrl: release.html_url || 'https://github.com/Maq-Swarm/cognition-wp/releases',
+        };
+      } catch (err) {
+        return {
+          currentVersion: '1.1.0',
+          latestVersion: null,
+          updateAvailable: false,
+          error: err instanceof Error ? err.message : String(err),
+          releaseUrl: 'https://github.com/Maq-Swarm/cognition-wp/releases',
+        };
+      }
+    });
+
+    ipcMain.handle('updates:downloadAndInstall', async (_, url: string) => {
+      try {
+        await shell.openExternal(url);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    });
+  }
+
+  // ─── Plugin Scaffolding ─────────────────────────────────
+
+  private registerPluginScaffoldHandler() {
+    ipcMain.handle('ext:scaffoldPlugin', async () => {
+      const result = await dialog.showOpenDialog({
+        title: 'Select folder for new plugin',
+        properties: ['openDirectory'],
+      });
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return null;
+      }
+
+      const targetDir = result.filePaths[0];
+      const pluginName = path.basename(targetDir).toLowerCase().replace(/\s+/g, '-');
+
+      // Create plugin structure
+      const manifest = {
+        name: pluginName,
+        displayName: pluginName.charAt(0).toUpperCase() + pluginName.slice(1),
+        description: 'A Cognition WP plugin',
+        version: '1.0.0',
+        publisher: 'your-name',
+        main: 'main.js',
+        icon: 'icon.svg',
+        activationEvents: ['onStartup'],
+        contributes: {
+          commands: [
+            { id: 'hello', title: 'Hello World' },
+          ],
+        },
+      };
+
+      const mainJs = `// ${pluginName} — Cognition WP Plugin
+function activate(context) {
+  context.commands.registerCommand('hello', () => {
+    context.notifications.info('Hello from ${pluginName}!');
+  });
+
+  // Register a toolbar button with an SVG icon
+  context.toolbar.registerButton('myButton', {
+    label: 'My Button',
+    tooltip: 'Click me!',
+    icon: 'icon.svg',
+    command: 'hello',
+  });
+
+  context.logger.info('${pluginName} activated');
+}
+
+function deactivate() {}
+
+module.exports = { activate, deactivate };
+`;
+
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="10"/>
+  <path d="M12 8v8M8 12h8"/>
+</svg>
+`;
+
+      try {
+        fs.writeFileSync(path.join(targetDir, 'package.json'), JSON.stringify(manifest, null, 2), 'utf-8');
+        fs.writeFileSync(path.join(targetDir, 'main.js'), mainJs, 'utf-8');
+        fs.writeFileSync(path.join(targetDir, 'icon.svg'), iconSvg, 'utf-8');
+
+        return { success: true, path: targetDir };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
     });
   }

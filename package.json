@@ -1,6 +1,6 @@
 {
   "name": "cognition-wp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Cognition WP — The VS Code of word processors. An open-source, extensible word processor built on Electron + TypeScript.",
   "main": "dist/main/index.js",
   "scripts": {
@@ -82,7 +82,10 @@
       "icon": "resources/icon.png"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "resources/icon.ico"
     },
     "nsis": {
@@ -92,6 +95,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Cognition WP"
+    },
+    "portable": {
+      "artifactName": "Cognition-WP-Portable-${version}.exe"
     },
     "linux": {
       "target": "AppImage",

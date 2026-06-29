@@ -7,10 +7,30 @@ Cognition WP's extension system is modeled after VS Code's. If you've written a 
 ```
 my-extension/
 ├── package.json      # Extension manifest (required)
-├── index.js          # Main entry point (required)
-├── icon.png          # Extension icon (optional)
+├── main.js           # Main entry point (required)
+├── icon.svg          # Toolbar button icon as SVG (optional but recommended)
+├── icon.png          # Extension list icon (optional)
 └── lib/              # Additional source files (optional)
 ```
+
+## Quick Start: Scaffold a Plugin
+
+Use the built-in scaffold wizard to create a new plugin in seconds:
+
+1. Go to **Help → Developer: Create New Plugin**
+2. Select a folder — the wizard creates `package.json`, `main.js`, and `icon.svg` for you
+3. Edit the files to customize your plugin
+4. Install via **Extensions → Install from .cogwp...**
+
+## Packaging as .cogwp
+
+Plugins are distributed as `.cogwp` files (ZIP archives):
+
+1. Zip your extension folder: `zip -r my-extension.cogwp my-extension/`
+2. Rename the extension to `.cogwp`
+3. Share the single `.cogwp` file — users install it via **Extensions → Install from .cogwp...**
+
+The `.cogwp` format is the Cognition WP Plugin Package, analogous to `.vsix` for VS Code.
 
 ## Manifest (package.json)
 
@@ -108,6 +128,22 @@ item.setTooltip('Click for options');
 item.show();
 item.hide();
 item.dispose();
+```
+
+### toolbar (SVG buttons)
+```javascript
+// Register a toolbar button with an SVG icon
+// icon can be a file path (relative to extension dir) or inline SVG string
+ctx.toolbar.registerButton('myButton', {
+  label: 'My Button',
+  tooltip: 'Click me!',
+  icon: 'icon.svg',          // or '<svg>...</svg>'
+  command: 'myext.doSomething',
+  position: 'right'          // 'left' or 'right' (default: 'right')
+});
+
+// The SVG icon should be 16x16 viewBox="0 0 24 24"
+// Use stroke="currentColor" so it adapts to the theme
 ```
 
 ### config
@@ -239,11 +275,16 @@ exports.deactivate = function() {
 
 ## Installation
 
+### Via Menu (recommended)
+1. Go to Extensions → Install from .cogwp...
+2. Select your `.cogwp` package or extension directory
+3. The extension will be discovered and activated automatically
+
 ### Manual
 1. Copy your extension directory to `%APPDATA%/cognition-wp/extensions/` (Windows) or `~/.cognition-wp/extensions/` (macOS/Linux)
 2. Restart Cognition WP
 
-### Via Menu
-1. Go to Extensions → Install from VSIX...
-2. Select your extension directory or `.cogx` package
-3. The extension will be discovered and activated automatically
+### Scaffold New Plugin
+1. Go to Help → Developer: Create New Plugin
+2. Select a folder — the wizard generates `package.json`, `main.js`, and `icon.svg`
+3. Edit and customize, then package as `.cogwp`

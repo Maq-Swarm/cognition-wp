@@ -8,7 +8,9 @@ An open-source, extensible word processor built on Electron and TypeScript. Cogn
 
 ## Download & Install
 
-Download `Cognition WP Setup 1.0.0.exe` from the [releases page](https://github.com/Maq-Swarm/cognition-wp/releases), double-click to install. Creates desktop and Start Menu shortcuts automatically.
+Download from the [releases page](https://github.com/Maq-Swarm/cognition-wp/releases):
+- `Cognition WP Setup 1.1.0.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
+- `Cognition-WP-Portable-1.1.0.exe` — Single portable EXE (no install needed, just run)
 
 ## Features
 
@@ -22,10 +24,18 @@ Download `Cognition WP Setup 1.0.0.exe` from the [releases page](https://github.
 - Text and background color selection
 - Font size control
 - Paragraph alignment (left, center, right, justify)
-- Spell check, auto-save, find and replace
+- Spell check (SymSpell-based, offline, custom dictionary), auto-save, find and replace
+
+### Document Templates
+- **arXiv Research Paper** — Academic paper format with two-column layout, abstract, sections, equations, tables, and references
+- **Outline** — Hierarchical numbered outline with sections, subsections, and bullets
+- **Email** — Formal email with To/From/Subject headers, greeting, body, and signature block
+- **Book Manuscript** — Novel/nonfiction format with title page, copyright page, chapter headings, and scene breaks
+
+Access via Insert → Templates, or the Command Palette.
 
 ### Export Formats
-- `.cog` — Cognition WP native format (v2.0.0: JSON with metadata, multi-format content, styles, history)
+- `.cog` — Cognition WP native format (v3.0.0: Markdown body + YAML frontmatter, human & AI readable)
 - `.md` — Markdown (headings, lists, tables, code blocks, links, images, checklists)
 - `.txt` — Plain text
 - `.html` — Standalone HTML with embedded CSS
@@ -35,20 +45,28 @@ Download `Cognition WP Setup 1.0.0.exe` from the [releases page](https://github.
 
 ### User Interface
 - VS Code-inspired layout: activity bar, sidebar, editor area, status bar
-- Command palette (Ctrl+Shift+P) with 50+ commands
+- Command palette (Ctrl+Shift+P) with 60+ commands
 - 4 themes: Dark, Light, Sepia, High Contrast
 - Focus mode for distraction-free writing
 - Document outline (auto-generated from headings)
 - Context menu, notification system
 - Custom title bar with window controls
 - Status bar (word count, reading time, cursor position, theme, spellcheck)
+- In-app settings with Updates, Templates, and Plugin Development panels
+
+### Auto-Update
+- Check for updates from GitHub Releases directly in Settings
+- One-click download and install
 
 ### Extension System (VS Code-style)
 - `package.json` manifest with `contributes`
-- Extension API: commands, editor, documents, notifications, statusBar, config, fs, logger
+- Extension API: commands, editor, documents, notifications, statusBar, toolbar (SVG buttons), config, fs, logger
 - Activation events: onStartup, onCommand, onLanguage, onDocumentOpen, etc.
 - Install/uninstall/enable/disable/reload from Extensions sidebar
-- Sample extension included (Word Count Pro)
+- **Plugin format: `.cogwp`** (ZIP archives, like .vsix for VS Code)
+- **SVG toolbar buttons** — plugins can add buttons to the toolbar with SVG icons
+- **Plugin scaffold wizard** — Help → Developer: Create New Plugin auto-generates the boilerplate
+- Plugin documentation built into the Settings panel
 
 ### Plugin Compatibility (External Tools)
 - JSON-RPC 2.0 over stdio protocol
@@ -84,23 +102,29 @@ Download `Cognition WP Setup 1.0.0.exe` from the [releases page](https://github.
 npm install
 npm run build
 npm start          # Run in dev
-npm run package:win  # Build installer (Windows)
+npm run package:win  # Build installer + portable EXE (Windows)
 ```
 
 ## Creating an Extension
 
 See [Extension API Guide](docs/extension-api.md).
 
+1. Use **Help → Developer: Create New Plugin** to scaffold a new plugin
+2. Edit the generated `package.json`, `main.js`, and `icon.svg`
+3. Zip the folder and rename to `.cogwp`
+4. Install via **Extensions → Install from .cogwp...**
+
+Or manually:
 1. Create a directory in `%APPDATA%/cognition-wp/extensions/my-extension/`
 2. Add a `package.json` with manifest
-3. Create `index.js` with `exports.activate = function(ctx) { ... }`
+3. Create `main.js` with `exports.activate = function(ctx) { ... }`
 4. Restart Cognition WP
 
 ## Architecture
 
-- **Main Process**: WindowManager, MenuBuilder, IPCRegistry, ExtensionHost, PluginHost, ExportManager, ConfigStore
+- **Main Process**: WindowManager, MenuBuilder, IPCRegistry, ExtensionHost, PluginHost, ExportManager, ConfigStore, UpdateChecker
 - **Preload**: Secure contextBridge (contextIsolation, no nodeIntegration, sandboxed)
-- **Renderer**: HTML/CSS/JS editor with full formatting toolbar
+- **Renderer**: HTML/CSS/JS editor with full formatting toolbar, templates, spellcheck
 - **Zero runtime dependencies** — config stored as plain JSON, no external libs needed at runtime
 
 ## License

@@ -266,6 +266,32 @@ export class MenuBuilder {
             label: 'Checklist',
             click: () => this.windowManager.send('insert:list', { type: 'checklist' }),
           },
+          { type: 'separator' },
+          {
+            label: 'Templates',
+            submenu: [
+              {
+                label: 'arXiv Research Paper',
+                click: () => this.windowManager.send('insert:template', { template: 'arxiv' }),
+              },
+              {
+                label: 'Outline',
+                click: () => this.windowManager.send('insert:template', { template: 'outline' }),
+              },
+              {
+                label: 'Email',
+                click: () => this.windowManager.send('insert:template', { template: 'email' }),
+              },
+              {
+                label: 'Book Manuscript',
+                click: () => this.windowManager.send('insert:template', { template: 'book' }),
+              },
+              {
+                label: 'Blank Document',
+                click: () => this.windowManager.send('insert:template', { template: 'blank' }),
+              },
+            ],
+          },
         ],
       },
 
@@ -361,12 +387,12 @@ export class MenuBuilder {
         label: '&Extensions',
         submenu: [
           {
-            label: 'Install from VSIX…',
+            label: 'Install from .cogwp…',
             click: async () => {
               const result = await dialog.showOpenDialog({
                 title: 'Install Extension',
                 filters: [
-                  { name: 'Cognition Extension', extensions: ['cogx', 'zip'] },
+                  { name: 'Cognition Plugin', extensions: ['cogwp', 'zip'] },
                   { name: 'All Files', extensions: ['*'] },
                 ],
                 properties: ['openFile'],
@@ -440,6 +466,15 @@ export class MenuBuilder {
           },
           { type: 'separator' },
           {
+            label: 'Developer: Create New Plugin',
+            click: () => this.windowManager.send('ext:createNew'),
+          },
+          {
+            label: 'Developer: Plugin Documentation',
+            click: () => this.windowManager.send('ext:docs'),
+          },
+          { type: 'separator' },
+          {
             label: 'About Cognition WP',
             click: () => {
               const win = this.windowManager.getMainWindow();
@@ -448,7 +483,7 @@ export class MenuBuilder {
                   type: 'info',
                   title: 'About Cognition WP',
                   message: 'Cognition WP',
-                  detail: 'The VS Code of word processors.\n\nVersion: 1.0.0\nPublisher: Maq-Swarm\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
+                  detail: 'The VS Code of word processors.\n\nVersion: 1.1.0\nPublisher: Maq-Swarm\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
                   icon: undefined,
                 });
               }

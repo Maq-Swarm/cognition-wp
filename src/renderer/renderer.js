@@ -439,6 +439,106 @@ function toggleChecklistItem() {
     '<ul class="checklist"><li>New task</li></ul><p></p>');
 }
 
+// ═══════════════════════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════════════════════
+
+function insertTemplate(templateKey) {
+  if (!window.COGNITION_TEMPLATES) {
+    showNotification('error', 'Templates', 'Templates not loaded');
+    return;
+  }
+  const template = window.COGNITION_TEMPLATES[templateKey];
+  if (!template) {
+    showNotification('error', 'Templates', 'Template not found: ' + templateKey);
+    return;
+  }
+
+  if (templateKey === 'blank') {
+    newDocument();
+    return;
+  }
+
+  // Confirm if editor has content
+  if (CognitionWP.editor.innerHTML.trim() &&
+      CognitionWP.editor.innerHTML.trim() !== '<h1>Welcome to Cognition WP</h1><p>The open-source, extensible word processor. Start typing to begin your document.</p><p>Cognition WP is an <em>open-source</em>, <u>extensible</u> word processor built on Electron and TypeScript. It features a full extension system for adding new capabilities.</p><h2>Key Features</h2><ul><li>Rich text editing with full formatting toolbar</li><li>Extension system for plugins and add-ons</li><li>Multiple themes (Light, Dark, Sepia, High Contrast)</li><li>Markdown import/export support</li><li>Command palette (Ctrl+Shift+P)</li><li>Full keyboard navigation</li></ul><blockquote>Tip: Press Ctrl+Shift+P to open the command palette and discover everything Cognition WP can do.</blockquote><p>Press <kbd>Ctrl+N</kbd> for a new document, or just start editing this one.</p>') {
+    if (!confirm('Replace current document with template?')) return;
+  }
+
+  CognitionWP.editor.innerHTML = template.insert();
+  CognitionWP.docTitle = template.name;
+  markDirty();
+  updateWordCount();
+  updateOutline();
+  updateDocTitle(template.name);
+  showNotification('info', 'Template', 'Inserted: ' + template.name);
+  CognitionWP.editor.focus();
+}
+
+function renderTemplates(container) {
+  const templates = window.COGNITION_TEMPLATES || {};
+  const icons = {
+    arxiv: 'paper', outline: 'list', email: 'envelope', book: 'book', blank: 'file'
+  };
+  const iconSvgs = {
+    paper: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>',
+    list: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    envelope: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+    book: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    file: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',
+  };
+
+  let html = '<div style="padding:8px 12px;">';
+  html += '<div class="sidebar-section-header" style="margin-bottom:8px;">Available Templates</div>';
+  for (const [key, tmpl] of Object.entries(templates)) {
+    const icon = iconSvgs[tmpl.icon] || iconSvgs.file;
+    html += `
+      <div class="template-card" onclick="insertTemplate('${key}')" style="
+        display:flex;gap:10px;padding:10px;margin-bottom:6px;border-radius:8px;
+        cursor:pointer;border:1px solid var(--border-color, #ddd);
+        background:var(--bg-panel, #f7f7fa);transition:background 0.15s;
+      " onmouseover="this.style.background='var(--bg-active, #e8e8f0)'"
+        onmouseout="this.style.background='var(--bg-panel, #f7f7fa)'">
+        <div style="color:var(--accent-color, #6c5ce7);flex-shrink:0;">${icon}</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;">${tmpl.name}</div>
+          <div style="font-size:11px;color:var(--fg-tab, #888);margin-top:2px;">${tmpl.description}</div>
+        </div>
+      </div>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UPDATE CHECKING
+// ═══════════════════════════════════════════════════════════
+
+async function checkForUpdates() {
+  showNotification('info', 'Updates', 'Checking for updates...');
+  try {
+    const result = await window.cognition.updates.check();
+    if (result.error) {
+      showNotification('warning', 'Update Check', 'Could not check for updates. Visit Settings to download manually.');
+      return;
+    }
+    if (result.updateAvailable) {
+      showNotification('info', 'Update Available',
+        `Version ${result.latestVersion} is available (current: ${result.currentVersion}). Click to download.`);
+      // In a full implementation, we'd show a dialog with release notes and download button
+      if (confirm(`Version ${result.latestVersion} is available!\n\nCurrent: ${result.currentVersion}\nLatest: ${result.latestVersion}\n\nWould you like to download the update?`)) {
+        window.cognition.updates.downloadAndInstall(result.downloadUrl);
+      }
+    } else {
+      showNotification('success', 'Up to Date',
+        `You're running the latest version (${result.currentVersion}).`);
+    }
+  } catch (e) {
+    showNotification('warning', 'Update Check',
+      'Could not check for updates. Visit GitHub releases page manually.');
+  }
+}
+
 function showLinkDialog() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -637,6 +737,14 @@ function showSidebarView(view) {
       title.textContent = 'Settings';
       renderSettings(content);
       break;
+    case 'templates':
+      title.textContent = 'Templates';
+      renderTemplates(content);
+      break;
+    case 'docs':
+      title.textContent = 'Plugin Documentation';
+      renderPluginDocs(content);
+      break;
   }
 }
 
@@ -806,6 +914,60 @@ function renderSettings(container) {
           </div>
         </div>
       </div>
+      <div class="settings-group">
+        <div class="settings-group-title">Templates</div>
+        <div class="setting-row" style="display:block;">
+          <span class="setting-label" style="display:block;margin-bottom:6px;">Document Templates</span>
+          <div style="font-size:12px;color:var(--fg-tab);margin-bottom:8px;">Cognition WP includes built-in templates for arXiv research papers, outlines, emails, book manuscripts, and blank documents. Use templates to jumpstart your writing.</div>
+          <button class="panel-btn primary" id="set-browse-templates">Browse Templates</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title">Updates</div>
+        <div class="setting-row">
+          <span class="setting-label">Current Version</span>
+          <div class="setting-control">
+            <span style="font-size:13px;color:var(--fg-tab);">v${(CognitionWP.config && CognitionWP.config['app.version']) || '1.1.0'}</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Check for Updates</span>
+          <div class="setting-control">
+            <button class="panel-btn" id="set-check-updates">Check Now</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Auto-Update</span>
+          <div class="setting-control">
+            <input type="checkbox" id="set-autoupdate" ${cfg['app.autoUpdate'] !== false ? 'checked' : ''} />
+          </div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title">Plugins &amp; Development</div>
+        <div class="setting-row" style="display:block;">
+          <span class="setting-label" style="display:block;margin-bottom:6px;">Plugin File Format</span>
+          <div style="font-size:12px;color:var(--fg-tab);margin-bottom:8px;">Extensions use the <code>.cogwp</code> file format. Create extensions with a package.json manifest and main.js entry file.</div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Create New Extension</span>
+          <div class="setting-control">
+            <button class="panel-btn" id="set-create-extension">Scaffold New Extension</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Developer Mode</span>
+          <div class="setting-control">
+            <input type="checkbox" id="set-dev-mode" ${cfg['app.developerMode'] ? 'checked' : ''} />
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Plugin Documentation</span>
+          <div class="setting-control">
+            <button class="panel-btn" id="set-view-docs">View Documentation</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
@@ -827,6 +989,33 @@ function renderSettings(container) {
   });
   document.getElementById('set-max-width').addEventListener('change', (e) => {
     window.cognition.config.set('editor.maxLineWidth', parseInt(e.target.value));
+  });
+  // Templates
+  document.getElementById('set-browse-templates').addEventListener('click', () => {
+    showSidebarView('templates');
+  });
+  // Updates
+  document.getElementById('set-check-updates').addEventListener('click', () => {
+    checkForUpdates();
+  });
+  document.getElementById('set-autoupdate').addEventListener('change', (e) => {
+    window.cognition.config.set('app.autoUpdate', e.target.checked);
+  });
+  // Plugins & Development
+  document.getElementById('set-create-extension').addEventListener('click', async () => {
+    const result = await window.cognition.extensions.scaffoldPlugin();
+    if (result && result.success) {
+      showNotification('success', 'Plugin Created', `Plugin scaffolded at: ${result.path}`);
+    } else if (result && result.error) {
+      showNotification('error', 'Plugin Creation Failed', result.error);
+    }
+  });
+  document.getElementById('set-dev-mode').addEventListener('change', (e) => {
+    window.cognition.config.set('app.developerMode', e.target.checked);
+    showNotification('info', 'Developer Mode', e.target.checked ? 'Developer mode enabled' : 'Developer mode disabled');
+  });
+  document.getElementById('set-view-docs').addEventListener('click', () => {
+    showPluginDocs('overview');
   });
 }
 
@@ -946,6 +1135,12 @@ const BUILTIN_COMMANDS = [
   { id: 'insert:quote', title: 'Quote Block', category: 'Insert' },
   { id: 'insert:hr', title: 'Horizontal Rule', category: 'Insert' },
   { id: 'insert:checklist', title: 'Checklist', category: 'Insert' },
+  { id: 'template:arxiv', title: 'Insert Template: arXiv Research Paper', category: 'Insert' },
+  { id: 'template:outline', title: 'Insert Template: Outline', category: 'Insert' },
+  { id: 'template:email', title: 'Insert Template: Email', category: 'Insert' },
+  { id: 'template:book', title: 'Insert Template: Book Manuscript', category: 'Insert' },
+  { id: 'template:blank', title: 'New from Template: Blank', category: 'Insert' },
+  { id: 'view:templates', title: 'Browse Templates', category: 'View' },
   { id: 'view:toggleSidebar', title: 'Toggle Sidebar', category: 'View', shortcut: 'Ctrl+B' },
   { id: 'view:toggleOutline', title: 'Toggle Outline', category: 'View', shortcut: 'Ctrl+Shift+O' },
   { id: 'view:toggleFocusMode', title: 'Toggle Focus Mode', category: 'View', shortcut: 'Ctrl+Shift+F' },
@@ -1109,6 +1304,12 @@ function executeCommandById(cmdId) {
     case 'insert:quote': document.execCommand('formatBlock', false, 'BLOCKQUOTE'); break;
     case 'insert:hr': document.execCommand('insertHorizontalRule'); break;
     case 'insert:checklist': toggleChecklistItem(); break;
+    case 'template:arxiv': insertTemplate('arxiv'); break;
+    case 'template:outline': insertTemplate('outline'); break;
+    case 'template:email': insertTemplate('email'); break;
+    case 'template:book': insertTemplate('book'); break;
+    case 'template:blank': insertTemplate('blank'); break;
+    case 'view:templates': showSidebarView('templates'); break;
     case 'view:toggleSidebar': toggleSidebar(); break;
     case 'view:toggleOutline': toggleRightPanel(); break;
     case 'view:toggleFocusMode': toggleFocusMode(); break;
@@ -1602,6 +1803,7 @@ function setupMenuListeners() {
   window.cognition.on('insert:codeBlock', () => document.execCommand('formatBlock', false, 'PRE'));
   window.cognition.on('insert:quote', () => document.execCommand('formatBlock', false, 'BLOCKQUOTE'));
   window.cognition.on('insert:hr', () => document.execCommand('insertHorizontalRule'));
+  window.cognition.on('insert:template', (data) => insertTemplate(data.template));
   window.cognition.on('insert:list', (data) => {
     if (data.type === 'bullet') document.execCommand('insertUnorderedList');
     else if (data.type === 'numbered') document.execCommand('insertOrderedList');
@@ -1641,10 +1843,45 @@ function setupMenuListeners() {
   window.cognition.on('ext:browse', () => showSidebarView('extensions'));
   window.cognition.on('ext:manage', () => showSidebarView('extensions'));
   window.cognition.on('ext:reloadAll', () => reloadAllExtensions());
-  window.cognition.on('ext:createNew', () => showNotification('info', 'Create Extension', 'See the documentation for creating extensions.'));
+  window.cognition.on('ext:createNew', async () => {
+    const result = await window.cognition.extensions.scaffoldPlugin();
+    if (result && result.success) {
+      showNotification('success', 'Plugin Created', `Plugin scaffolded at: ${result.path}`);
+    } else if (result && result.error) {
+      showNotification('error', 'Plugin Creation Failed', result.error);
+    }
+  });
+  window.cognition.on('ext:docs', () => showSidebarView('docs'));
+
+  // Toolbar button injection from extensions
+  window.cognition.on('toolbar:addButton', (data) => {
+    const toolbar = document.getElementById('ext-toolbar-buttons');
+    if (!toolbar) return;
+    // Remove existing button with same ID
+    const existing = toolbar.querySelector(`[data-ext-button="${data.id}"]`);
+    if (existing) existing.remove();
+    // Create new button
+    const btn = document.createElement('button');
+    btn.className = 'tool-btn ext-toolbar-btn';
+    btn.setAttribute('data-ext-button', data.id);
+    btn.title = data.tooltip || data.label || '';
+    btn.innerHTML = data.svg || '';
+    btn.addEventListener('click', () => {
+      window.cognition.extensions.executeCommand(data.command).catch(err => {
+        showNotification('error', 'Extension Error', err.message);
+      });
+    });
+    toolbar.appendChild(btn);
+  });
+  window.cognition.on('toolbar:removeButton', (data) => {
+    const toolbar = document.getElementById('ext-toolbar-buttons');
+    if (!toolbar) return;
+    const btn = toolbar.querySelector(`[data-ext-button="${data.id}"]`);
+    if (btn) btn.remove();
+  });
 
   window.cognition.on('help:shortcuts', () => showShortcutsHelp());
-  window.cognition.on('help:checkUpdates', () => showNotification('info', 'Updates', 'You are running the latest version of Cognition WP.'));
+  window.cognition.on('help:checkUpdates', () => checkForUpdates());
 
   window.cognition.on('notification:info', (msg) => showNotification('info', 'Info', msg));
   window.cognition.on('notification:warning', (msg) => showNotification('warning', 'Warning', msg));
@@ -1700,7 +1937,64 @@ async function reloadAllExtensions() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PLUGIN DOCUMENTATION
+// PLUGIN DOCUMENTATION (inline in sidebar)
+// ═══════════════════════════════════════════════════════════
+
+function renderPluginDocs(container) {
+  container.innerHTML = `
+    <div style="padding:8px 12px;font-size:13px;line-height:1.6;color:var(--fg-menu);">
+      <h3 style="margin:0 0 8px;font-size:14px;">Plugin Development Guide</h3>
+      <p style="margin:0 0 8px;color:var(--fg-tab);">Cognition WP plugins use the <code>.cogwp</code> format.</p>
+      <div style="margin-bottom:12px;">
+        <strong style="font-size:12px;display:block;margin-bottom:4px;">Quick Start</strong>
+        <ol style="margin:0;padding-left:20px;">
+          <li>Help → Developer: Create New Plugin</li>
+          <li>Select a folder — wizard generates files</li>
+          <li>Edit package.json, main.js, icon.svg</li>
+          <li>Zip as .cogwp and install</li>
+        </ol>
+      </div>
+      <div style="margin-bottom:12px;">
+        <strong style="font-size:12px;display:block;margin-bottom:4px;">Structure</strong>
+        <pre style="font-size:11px;background:var(--bg-panel);padding:8px;border-radius:4px;">my-plugin/
+├── package.json
+├── main.js
+└── icon.svg</pre>
+      </div>
+      <div style="margin-bottom:12px;">
+        <strong style="font-size:12px;display:block;margin-bottom:4px;">Extension API</strong>
+        <div style="font-size:12px;color:var(--fg-tab);">
+          <div>context.commands.registerCommand()</div>
+          <div>context.editor.getContent() / setContent()</div>
+          <div>context.notifications.info/warning/error()</div>
+          <div>context.statusBar.createItem()</div>
+          <div>context.toolbar.registerButton() (SVG)</div>
+          <div>context.config.get() / getAll()</div>
+          <div>context.logger.info/warn/error()</div>
+          <div>context.fs.readFileSync/writeFileSync()</div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <strong style="font-size:12px;display:block;margin-bottom:4px;">Packaging</strong>
+        <p style="font-size:12px;color:var(--fg-tab);margin:0;">Zip your extension folder and rename to <code>.cogwp</code>. Install via Extensions → Install from .cogwp...</p>
+      </div>
+      <div style="margin-bottom:12px;">
+        <strong style="font-size:12px;display:block;margin-bottom:4px;">SVG Toolbar Buttons</strong>
+        <p style="font-size:12px;color:var(--fg-tab);margin:0 0 4px;">Plugins can add toolbar buttons with SVG icons:</p>
+        <pre style="font-size:11px;background:var(--bg-panel);padding:8px;border-radius:4px;">ctx.toolbar.registerButton('myBtn', {
+  label: 'My Button',
+  tooltip: 'Click me!',
+  icon: 'icon.svg',
+  command: 'myExt.doSomething'
+});</pre>
+      </div>
+      <button class="panel-btn primary" style="width:100%;margin-top:4px;" onclick="showPluginDocs('overview')">Open Full Documentation</button>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PLUGIN DOCUMENTATION (modal)
 // ═══════════════════════════════════════════════════════════
 
 function showPluginDocs(topic) {
@@ -2035,6 +2329,40 @@ function showShortcutsHelp() {
   shortcuts.forEach(s => {
     showNotification('info', 'Shortcuts', s);
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════════════════════
+
+function insertTemplate(templateKey) {
+  const templates = window.COGNITION_TEMPLATES || {};
+  const template = templates[templateKey];
+  if (!template) {
+    showNotification('error', 'Template Not Found', `Template "${templateKey}" does not exist.`);
+    return;
+  }
+
+  // Blank template just creates a new document
+  if (templateKey === 'blank') {
+    newDocument();
+    showNotification('info', 'Template', 'New blank document created.');
+    return;
+  }
+
+  // Confirm replacing current content
+  if (CognitionWP.isDirty || CognitionWP.editor.innerText.trim().length > 0) {
+    if (!confirm(`Insert the "${template.name}" template? This will replace your current document content.`)) {
+      return;
+    }
+  }
+
+  CognitionWP.editor.innerHTML = template.insert();
+  markDirty();
+  updateWordCount();
+  updateOutline();
+  CognitionWP.editor.focus();
+  showNotification('success', 'Template Inserted', `"${template.name}" template loaded.`);
 }
 
 // ═══════════════════════════════════════════════════════════

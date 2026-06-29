@@ -1,7 +1,7 @@
 {
-  "name": "cognition-wp",
+  "name": "cognitience-wp",
   "version": "1.1.0",
-  "description": "Cognition WP — The VS Code of word processors. An open-source, extensible word processor built on Electron + TypeScript.",
+  "description": "Cognitience WP — The VS Code of word processors. An open-source, extensible word processor built on Electron + TypeScript.",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "tsc-watch --onSuccess \"npm run copy-assets && electron .\"",
@@ -23,17 +23,17 @@
     "extensions",
     "plugins",
     "open-source",
-    "cognition"
+    "cognitience"
   ],
-  "author": "Maq-Swarm",
+  "author": "wailonbrowngh",
   "license": "MIT",
-  "homepage": "https://github.com/Maq-Swarm/cognition-wp",
+  "homepage": "https://github.com/wailonbrowngh/cognitience-wp",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Maq-Swarm/cognition-wp.git"
+    "url": "https://github.com/wailonbrowngh/cognitience-wp.git"
   },
   "bugs": {
-    "url": "https://github.com/Maq-Swarm/cognition-wp/issues"
+    "url": "https://github.com/wailonbrowngh/cognitience-wp/issues"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",
@@ -55,8 +55,8 @@
     "marked": "^18.0.5"
   },
   "build": {
-    "appId": "com.maqswarm.cognitionwp",
-    "productName": "Cognition WP",
+    "appId": "com.wailonbrowngh.cognitiencewp",
+    "productName": "Cognitience WP",
     "directories": {
       "output": "release",
       "buildResources": "resources"
@@ -102,10 +102,10 @@
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Cognition WP"
+      "shortcutName": "Cognitience WP"
     },
     "portable": {
-      "artifactName": "Cognition-WP-Portable-${version}.exe"
+      "artifactName": "Cognitience-WP-Portable-${version}.exe"
     },
     "linux": {
       "target": [

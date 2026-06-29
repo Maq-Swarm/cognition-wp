@@ -1,13 +1,13 @@
 /**
- * Cognition WP — Plugin Compatibility Layer
- * Enables external tools (like Claude Code, Codex, etc.) to plug into Cognition WP
+ * Cognitience WP — Plugin Compatibility Layer
+ * Enables external tools (like Claude Code, Codex, etc.) to plug into Cognitience WP
  * via a standardized protocol — similar to how language servers plug into VS Code.
  *
  * Protocol: JSON-RPC 2.0 over stdio
- * Tools communicate with Cognition WP via a simple protocol:
+ * Tools communicate with Cognitience WP via a simple protocol:
  *   1. Tool launches as a child process
  *   2. Tool sends "initialize" request
- *   3. Cognition WP responds with capabilities
+ *   3. Cognitience WP responds with capabilities
  *   4. Tool can then send commands (editor.getContent, editor.setContent, etc.)
  */
 
@@ -108,7 +108,7 @@ export class PluginHost extends EventEmitter {
     // Spawn the plugin process
     const proc = spawn(desc.command, desc.args, {
       cwd: desc.cwd,
-      env: { ...process.env, ...desc.env, COGNITION_WP_PLUGIN: '1' },
+      env: { ...process.env, ...desc.env, COGNITIENCE_WP_PLUGIN: '1' },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 

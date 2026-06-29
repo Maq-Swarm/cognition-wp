@@ -1,6 +1,6 @@
 # Extension API Guide
 
-Cognition WP's extension system is modeled after VS Code's. If you've written a VS Code extension, you'll feel right at home.
+Cognitience WP's extension system is modeled after VS Code's. If you've written a VS Code extension, you'll feel right at home.
 
 ## Extension Structure
 
@@ -30,7 +30,7 @@ Plugins are distributed as `.cogwp` files (ZIP archives):
 2. Rename the extension to `.cogwp`
 3. Share the single `.cogwp` file — users install it via **Extensions → Install from .cogwp...**
 
-The `.cogwp` format is the Cognition WP Plugin Package, analogous to `.vsix` for VS Code.
+The `.cogwp` format is the Cognitience WP Plugin Package, analogous to `.vsix` for VS Code.
 
 ## Manifest (package.json)
 
@@ -38,10 +38,10 @@ The `.cogwp` format is the Cognition WP Plugin Package, analogous to `.vsix` for
 {
   "name": "my-extension",
   "displayName": "My Extension",
-  "description": "A cool extension for Cognition WP",
+  "description": "A cool extension for Cognitience WP",
   "version": "1.0.0",
   "publisher": "your-name",
-  "engines": { "cognitionWp": "^1.0.0" },
+  "engines": { "cognitienceWp": "^1.0.0" },
   "categories": ["Productivity"],
   "keywords": ["writing", "tools"],
   "main": "index.js",
@@ -62,7 +62,7 @@ The `.cogwp` format is the Cognition WP Plugin Package, analogous to `.vsix` for
 
 | Event | Description |
 |-------|-------------|
-| `onStartup` | Activate when Cognition WP starts |
+| `onStartup` | Activate when Cognitience WP starts |
 | `onCommand` | Activate when a specific command is run |
 | `onDocumentOpen` | Activate when a document is opened |
 | `onDocumentSave` | Activate when a document is saved |
@@ -281,8 +281,8 @@ exports.deactivate = function() {
 3. The extension will be discovered and activated automatically
 
 ### Manual
-1. Copy your extension directory to `%APPDATA%/cognition-wp/extensions/` (Windows) or `~/.cognition-wp/extensions/` (macOS/Linux)
-2. Restart Cognition WP
+1. Copy your extension directory to `%APPDATA%/cognitience-wp/extensions/` (Windows) or `~/.cognitience-wp/extensions/` (macOS/Linux)
+2. Restart Cognitience WP
 
 ### Scaffold New Plugin
 1. Go to Help → Developer: Create New Plugin

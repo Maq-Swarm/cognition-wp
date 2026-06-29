@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Configuration Store
+ * Cognitience WP — Configuration Store
  * Persistent settings management with VS Code-style dotted keys.
  * Uses a simple JSON file instead of electron-store (which is ESM-only in v10).
  */
@@ -15,7 +15,7 @@ export class ConfigStore {
   private watchers: Map<string, ((newValue: unknown, oldValue: unknown) => void)[]> = new Map();
 
   constructor() {
-    this.configPath = path.join(app.getPath('userData'), 'cognition-wp-config.json');
+    this.configPath = path.join(app.getPath('userData'), 'cognitience-wp-config.json');
     this.data = this.load();
   }
 

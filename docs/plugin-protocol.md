@@ -1,14 +1,14 @@
 # Plugin Protocol
 
-Cognition WP supports external tool plugins via a JSON-RPC 2.0 protocol over stdio. This allows tools like Claude Code, Codex, or any external process to plug into the editor — similar to how Language Servers plug into VS Code.
+Cognitience WP supports external tool plugins via a JSON-RPC 2.0 protocol over stdio. This allows tools like Claude Code, Codex, or any external process to plug into the editor — similar to how Language Servers plug into VS Code.
 
 ## How It Works
 
 1. The plugin is a standalone process (any language)
-2. Cognition WP spawns the process and communicates via stdin/stdout
+2. Cognitience WP spawns the process and communicates via stdin/stdout
 3. Messages are JSON-RPC 2.0, newline-delimited
-4. The plugin can call Cognition WP APIs (editor, notifications, etc.)
-5. Cognition WP can call the plugin with events and requests
+4. The plugin can call Cognitience WP APIs (editor, notifications, etc.)
+5. Cognitience WP can call the plugin with events and requests
 
 ## Plugin Descriptor (plugin.json)
 
@@ -26,7 +26,7 @@ Cognition WP supports external tool plugins via a JSON-RPC 2.0 protocol over std
 
 ## Protocol
 
-### Initialize (Cognition WP → Plugin)
+### Initialize (Cognitience WP → Plugin)
 ```json
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{
   "processId": 12345,
@@ -43,7 +43,7 @@ Cognition WP supports external tool plugins via a JSON-RPC 2.0 protocol over std
 }}
 ```
 
-### Plugin → Cognition WP Requests
+### Plugin → Cognitience WP Requests
 
 #### editor.getContent
 ```json
@@ -97,7 +97,7 @@ Response: `{"jsonrpc":"2.0","id":4,"result":{"text":"selected","start":0,"end":8
 {"jsonrpc":"2.0","id":11,"method":"commands.execute","params":{"id":"some.command","args":[]}}
 ```
 
-### Cognition WP → Plugin Notifications
+### Cognitience WP → Plugin Notifications
 
 #### shutdown
 ```json
@@ -159,15 +159,15 @@ for line in sys.stdin:
 
 ## Installation
 
-1. Create a directory in `%APPDATA%/cognition-wp/plugins/my-plugin/`
+1. Create a directory in `%APPDATA%/cognitience-wp/plugins/my-plugin/`
 2. Add `plugin.json`
 3. Add your executable script
-4. Start Cognition WP — the plugin appears in Extensions sidebar
+4. Start Cognitience WP — the plugin appears in Extensions sidebar
 5. Click "Enable" to start the plugin process
 
 ## Security
 
-- Plugins run as child processes with the same permissions as Cognition WP
+- Plugins run as child processes with the same permissions as Cognitience WP
 - File system access is limited to the plugin's directory
 - Editor access is mediated through the JSON-RPC protocol
-- The `COGNITION_WP_PLUGIN=1` environment variable is set for plugin processes
+- The `COGNITIENCE_WP_PLUGIN=1` environment variable is set for plugin processes

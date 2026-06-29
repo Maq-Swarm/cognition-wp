@@ -1,9 +1,9 @@
 /**
- * Cognition WP — Extension API SDK
+ * Cognitience WP — Extension API SDK
  * Public API for extension developers.
  *
  * To create an extension:
- * 1. Create a directory in ~/.cognition-wp/extensions/<your-extension>/
+ * 1. Create a directory in ~/.cognitience-wp/extensions/<your-extension>/
  * 2. Add a package.json with the extension manifest
  * 3. Create your main JS file that exports activate() and optionally deactivate()
  *

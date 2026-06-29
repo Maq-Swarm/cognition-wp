@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Extension Host
+ * Cognitience WP — Extension Host
  * The heart of the extension system. Manages loading, activation, deactivation,
  * and lifecycle of all extensions. Inspired by VS Code's extension host.
  */
@@ -398,7 +398,7 @@ export class ExtensionHost {
 
   /**
    * Install from a .cogwp archive (ZIP format).
-   * .cogwp is the Cognition WP plugin package format, similar to .vsix for VS Code.
+   * .cogwp is the Cognitience WP plugin package format, similar to .vsix for VS Code.
    */
   private async installFromArchive(archivePath: string): Promise<InstalledExtension> {
     const tmpDir = path.join(os.tmpdir(), `cogwp-install-${Date.now()}`);

@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Shared Types
+ * Cognitience WP — Shared Types
  * Common interfaces used across main process, renderer, and extensions.
  */
 
@@ -19,7 +19,7 @@ export interface CognitionDocument {
   charCount: number;
 }
 
-export type DocumentFormat = 'cognition' | 'markdown' | 'html' | 'plaintext' | 'rich';
+export type DocumentFormat = 'cognitience' | 'markdown' | 'html' | 'plaintext' | 'rich';
 
 export interface DocumentStats {
   wordCount: number;
@@ -37,7 +37,7 @@ export interface ExtensionManifest {
   description: string;
   version: string;
   publisher: string;
-  engines: { cognitionWp: string };
+  engines: { cognitienceWp: string };
   categories: string[];
   keywords: string[];
   main: string;

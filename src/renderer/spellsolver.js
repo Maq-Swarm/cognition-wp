@@ -1,5 +1,5 @@
 /**
- * Cognition WP — SymSpell Spellchecker
+ * Cognitience WP — SymSpell Spellchecker
  * Lightweight dictionary-based spellchecker for real-time spellchecking.
  * Provides: misspelling detection, correction suggestions, and autocorrect.
  *
@@ -29,7 +29,7 @@ this that these those here there now then today tomorrow yesterday
 a an the and or but if when while because although though unless since until before after during through between among against without within
 hello goodbye please thank thanks sorry welcome yes no maybe okay ok alright
 spelling spell spelled spelt spells correction correct correctly checking checked checker checkers dictionary dictionaries word words letter letters text texts writing written writer writes wrote type typing typed types document documents paragraph paragraphs sentence sentences grammar grammatical punctuate punctuation capital capitalization lowercase uppercase format formatting formatted
-cognition extension plugin theme settings preference preferences configuration configure options tools tool features feature menu bar toolbar sidebar panel status window windows file files folder folders directory directories
+cognitience extension plugin theme settings preference preferences configuration configure options tools tool features feature menu bar toolbar sidebar panel status window windows file files folder folders directory directories
 email website internet online offline computer keyboard mouse screen monitor printer software hardware application apps download upload cloud server client
 business businesses service services customer customers product products market markets marketing sale sales purchase purchases order orders payment payments invoice invoices
 restaurant restaurants menu menus food foods drink drinks coffee tea breakfast lunch dinner dessert appetizer appetizers

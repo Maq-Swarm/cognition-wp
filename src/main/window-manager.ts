@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Window Manager
+ * Cognitience WP — Window Manager
  * Manages BrowserWindow lifecycle, state restoration, and multi-window support.
  */
 
@@ -42,7 +42,7 @@ export class WindowManager {
       minHeight: 400,
       show: false,
       icon,
-      title: 'Cognition WP',
+      title: 'Cognitience WP',
       backgroundColor: '#ffffff',
       titleBarStyle: 'hidden',
       frame: false,
@@ -54,8 +54,8 @@ export class WindowManager {
         sandbox: false,
         spellcheck: true,
         additionalArguments: [
-          `--cognition-version=1.1.0`,
-          `--cognition-platform=${process.platform}`,
+          `--cognitience-version=1.1.0`,
+          `--cognitience-platform=${process.platform}`,
         ],
       },
     });

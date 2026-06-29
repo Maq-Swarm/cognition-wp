@@ -1,5 +1,5 @@
 /**
- * Cognition WP — IPC Registry
+ * Cognitience WP — IPC Registry
  * Registers all IPC handlers between the main process and renderer.
  */
 
@@ -56,7 +56,7 @@ export class IPCMainRegistry {
           title: 'Open Document',
           filters: [
             { name: 'All Supported', extensions: ['cog', 'md', 'txt', 'html', 'rtf', 'json', 'pdf', 'doc', 'docx'] },
-            { name: 'Cognition Document', extensions: ['cog'] },
+            { name: 'Cognitience Document', extensions: ['cog'] },
             { name: 'Word Documents', extensions: ['doc', 'docx'] },
             { name: 'Markdown', extensions: ['md', 'markdown'] },
             { name: 'PDF', extensions: ['pdf'] },
@@ -83,7 +83,7 @@ export class IPCMainRegistry {
             parsedContent = content;
           } else {
             parsedContent = parsed.html;
-            format = 'cognition';
+            format = 'cognitience';
           }
         } catch (e) {
           throw new Error(`Failed to open .cog file: ${e instanceof Error ? e.message : String(e)}`);
@@ -184,7 +184,7 @@ export class IPCMainRegistry {
 
     ipcMain.handle('doc:saveAs', async (_, docData: { content: string; format: string; title: string }) => {
       const filters: Electron.FileFilter[] = [
-        { name: 'Cognition Document', extensions: ['cog'] },
+        { name: 'Cognitience Document', extensions: ['cog'] },
         { name: 'Markdown', extensions: ['md'] },
         { name: 'Text', extensions: ['txt'] },
         { name: 'HTML', extensions: ['html'] },
@@ -383,12 +383,12 @@ export class IPCMainRegistry {
   private registerUpdateHandlers() {
     ipcMain.handle('updates:check', async () => {
       try {
-        const url = 'https://api.github.com/repos/Maq-Swarm/cognition-wp/releases/latest';
+        const url = 'https://api.github.com/repos/wailonbrowngh/cognitience-wp/releases/latest';
 
         const data: string = await new Promise((resolve, reject) => {
           const req = https.get(url, {
             headers: {
-              'User-Agent': 'cognition-wp',
+              'User-Agent': 'cognitience-wp',
               'Accept': 'application/vnd.github.v3+json',
             },
           }, (res: any) => {
@@ -412,7 +412,7 @@ export class IPCMainRegistry {
           updateAvailable: latestVersion && latestVersion !== '1.1.0',
           downloadUrl,
           releaseNotes: release.body || '',
-          releaseUrl: release.html_url || 'https://github.com/Maq-Swarm/cognition-wp/releases',
+          releaseUrl: release.html_url || 'https://github.com/wailonbrowngh/cognitience-wp/releases',
         };
       } catch (err) {
         return {
@@ -420,7 +420,7 @@ export class IPCMainRegistry {
           latestVersion: null,
           updateAvailable: false,
           error: err instanceof Error ? err.message : String(err),
-          releaseUrl: 'https://github.com/Maq-Swarm/cognition-wp/releases',
+          releaseUrl: 'https://github.com/wailonbrowngh/cognitience-wp/releases',
         };
       }
     });
@@ -464,7 +464,7 @@ export class IPCMainRegistry {
       const manifest = {
         name: pluginName,
         displayName: pluginName.charAt(0).toUpperCase() + pluginName.slice(1),
-        description: 'A Cognition WP plugin',
+        description: 'A Cognitience WP plugin',
         version: '1.0.0',
         publisher: 'your-name',
         main: 'main.js',
@@ -477,7 +477,7 @@ export class IPCMainRegistry {
         },
       };
 
-      const mainJs = `// ${pluginName} — Cognition WP Plugin
+      const mainJs = `// ${pluginName} — Cognitience WP Plugin
 function activate(context) {
   context.commands.registerCommand('hello', () => {
     context.notifications.info('Hello from ${pluginName}!');

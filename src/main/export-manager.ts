@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Export Manager
+ * Cognitience WP — Export Manager
  * Handles exporting documents to multiple formats: .cog, .md, .txt, .pdf, .docx, .doc (RTF), .html
  */
 
@@ -9,7 +9,7 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import { JSDOM } from 'jsdom';
 import JSZip from 'jszip';
-import { COGNITION_DOC_FORMAT, APP_VERSION } from '../shared/constants';
+import { COGNITIENCE_DOC_FORMAT, APP_VERSION } from '../shared/constants';
 
 export class ExportManager {
   constructor() {
@@ -76,7 +76,7 @@ export class ExportManager {
 
   private getFilters(format: string): Electron.FileFilter[] {
     switch (format) {
-      case 'cog': return [{ name: 'Cognition Document', extensions: ['cog'] }];
+      case 'cog': return [{ name: 'Cognitience Document', extensions: ['cog'] }];
       case 'markdown': case 'md': return [{ name: 'Markdown', extensions: ['md'] }];
       case 'txt': case 'plaintext': return [{ name: 'Plain Text', extensions: ['txt'] }];
       case 'html': return [{ name: 'HTML', extensions: ['html'] }];
@@ -100,7 +100,7 @@ export class ExportManager {
   //   modified: 2026-06-28T12:30:00Z
   //   word_count: 42
   //   reading_time: 1
-  //   theme: cognition-light
+  //   theme: cognitience-light
   //   ---
   //   
   //   # My Document
@@ -136,7 +136,7 @@ export class ExportManager {
     const isExisting = Object.keys(existingMeta).length > 0;
 
     const frontmatter: Record<string, any> = {
-      magic: COGNITION_DOC_FORMAT.magic,
+      magic: COGNITIENCE_DOC_FORMAT.magic,
       version: '3.0.0',
       title: title || 'Untitled',
       author: existingMeta.author || '',
@@ -145,12 +145,12 @@ export class ExportManager {
       created: existingMeta.created || now.toISOString(),
       modified: now.toISOString(),
       app_version: APP_VERSION,
-      format: 'cognition-wp',
+      format: 'cognitience-wp',
       word_count: stats.wordCount,
       char_count: stats.charCount,
       paragraph_count: stats.paragraphCount,
       reading_time: stats.readingTime,
-      theme: existingMeta.theme || 'cognition-light',
+      theme: existingMeta.theme || 'cognitience-light',
       font_family: existingMeta.font_family || "'Segoe UI', sans-serif",
       font_size: existingMeta.font_size || 16,
       line_height: existingMeta.line_height || 1.6,
@@ -186,7 +186,7 @@ export class ExportManager {
     // Fallback: try v2 JSON format
     try {
       const json = JSON.parse(raw);
-      if (json.magic !== COGNITION_DOC_FORMAT.magic) return null;
+      if (json.magic !== COGNITIENCE_DOC_FORMAT.magic) return null;
 
       // v2 stored content as { type, html, plainText, markdown }
       let html = '';
@@ -211,12 +211,12 @@ export class ExportManager {
         created: json.metadata?.createdAt ? new Date(json.metadata.createdAt).toISOString() : new Date().toISOString(),
         modified: json.metadata?.modifiedAt ? new Date(json.metadata.modifiedAt).toISOString() : new Date().toISOString(),
         app_version: json.metadata?.appVersion || APP_VERSION,
-        format: json.metadata?.format || 'cognition-wp',
+        format: json.metadata?.format || 'cognitience-wp',
         word_count: json.metadata?.wordCount || 0,
         char_count: json.metadata?.charCount || 0,
         paragraph_count: json.metadata?.paragraphCount || 0,
         reading_time: json.metadata?.readingTime || 1,
-        theme: json.styles?.theme || 'cognition-light',
+        theme: json.styles?.theme || 'cognitience-light',
         font_family: json.styles?.fontFamily || "'Segoe UI', sans-serif",
         font_size: json.styles?.fontSize || 16,
         line_height: json.styles?.lineHeight || 1.6,
@@ -247,7 +247,7 @@ export class ExportManager {
       return null;
     }
 
-    if (frontmatter.magic !== COGNITION_DOC_FORMAT.magic) return null;
+    if (frontmatter.magic !== COGNITIENCE_DOC_FORMAT.magic) return null;
 
     const markdownBody = body.trim();
 

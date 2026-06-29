@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Document Templates
+ * Cognitience WP — Document Templates
  * Editable templates with clear placeholder fields the user fills in.
  * All content is contenteditable so the user just clicks and types.
  *
@@ -280,5 +280,5 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = TEMPLATES;
 }
 if (typeof window !== 'undefined') {
-  window.COGNITION_TEMPLATES = TEMPLATES;
+  window.COGNITIENCE_TEMPLATES = TEMPLATES;
 }

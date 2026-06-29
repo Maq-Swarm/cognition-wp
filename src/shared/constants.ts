@@ -1,16 +1,16 @@
 /**
- * Cognition WP — Shared Constants
+ * Cognitience WP — Shared Constants
  */
 
-export const APP_NAME = 'Cognition WP';
+export const APP_NAME = 'Cognitience WP';
 export const APP_VERSION = '1.1.0';
-export const APP_PUBLISHER = 'Maq-Swarm';
-export const GITHUB_REPO = 'Maq-Swarm/cognition-wp';
-export const GITHUB_RELEASES_URL = 'https://github.com/Maq-Swarm/cognition-wp/releases';
-export const GITHUB_LATEST_API = 'https://api.github.com/repos/Maq-Swarm/cognition-wp/releases/latest';
+export const APP_PUBLISHER = 'wailonbrowngh';
+export const GITHUB_REPO = 'wailonbrowngh/cognitience-wp';
+export const GITHUB_RELEASES_URL = 'https://github.com/wailonbrowngh/cognitience-wp/releases';
+export const GITHUB_LATEST_API = 'https://api.github.com/repos/wailonbrowngh/cognitience-wp/releases/latest';
 
 export const EXTENSIONS_DIR = 'extensions';
-export const CONFIG_FILE = 'cognition-wp-config.json';
+export const CONFIG_FILE = 'cognitience-wp-config.json';
 
 export const DEFAULT_CONFIG: Record<string, unknown> = {
   'editor.fontSize': 12,
@@ -33,7 +33,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   'editor.paragraphSpacing': 16,
   'editor.maxLineWidth': 720,
 
-  'theme.current': 'cognition-light',
+  'theme.current': 'cognitience-light',
   'theme.autoDetect': true,
 
   'window.titleBarStyle': 'custom',
@@ -42,7 +42,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
 
   'files.autoSave': 'off',
   'files.hotExit': true,
-  'files.defaultFormat': 'cognition',
+  'files.defaultFormat': 'cognitience',
   'files.exclude': ['**/.git', '**/.DS_Store'],
 
   'telemetry.enable': false,
@@ -52,7 +52,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   'extensions.ignoreRecommendations': false,
   'extensions.allowUntrusted': false,
   'extensions.galleryEnabled': true,
-  'extensions.galleryUrl': 'https://registry.cognitionwp.org/api',
+  'extensions.galleryUrl': 'https://registry.cognitiencewp.org/api',
 
   'updates.autoCheck': true,
   'updates.channel': 'stable',
@@ -63,7 +63,7 @@ export const DEFAULT_CONFIG: Record<string, unknown> = {
   'plugins.format': '.cogwp',
 };
 
-export const COGNITION_DOC_FORMAT = {
+export const COGNITIENCE_DOC_FORMAT = {
   magic: 'COGWP',
   version: '3.0.0',
   supportedVersions: ['1.0.0', '2.0.0', '2.1.0', '3.0.0'],
@@ -73,7 +73,7 @@ export const COGNITION_DOC_FORMAT = {
 
 export const PLUGIN_FORMAT = {
   extension: '.cogwp',
-  description: 'Cognition WP Plugin Package',
+  description: 'Cognitience WP Plugin Package',
   // .cogwp files are ZIP archives containing:
   //   package.json (manifest)
   //   main.js (entry point)
@@ -83,8 +83,8 @@ export const PLUGIN_FORMAT = {
 
 export const BUILTIN_THEMES = [
   {
-    id: 'cognition-dark',
-    label: 'Cognition Dark',
+    id: 'cognitience-dark',
+    label: 'Cognitience Dark',
     type: 'dark' as const,
     colors: {
       'editor.background': '#1e1e2e',
@@ -112,8 +112,8 @@ export const BUILTIN_THEMES = [
     },
   },
   {
-    id: 'cognition-light',
-    label: 'Cognition Light',
+    id: 'cognitience-light',
+    label: 'Cognitience Light',
     type: 'light' as const,
     colors: {
       'editor.background': '#ffffff',
@@ -141,8 +141,8 @@ export const BUILTIN_THEMES = [
     },
   },
   {
-    id: 'cognition-sepia',
-    label: 'Cognition Sepia',
+    id: 'cognitience-sepia',
+    label: 'Cognitience Sepia',
     type: 'light' as const,
     colors: {
       'editor.background': '#f4ecd8',
@@ -170,8 +170,8 @@ export const BUILTIN_THEMES = [
     },
   },
   {
-    id: 'cognition-contrast-dark',
-    label: 'Cognition High Contrast (Dark)',
+    id: 'cognitience-contrast-dark',
+    label: 'Cognitience High Contrast (Dark)',
     type: 'contrast' as const,
     colors: {
       'editor.background': '#000000',

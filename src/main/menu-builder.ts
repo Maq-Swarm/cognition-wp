@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Menu Builder
+ * Cognitience WP — Menu Builder
  * Constructs the application menu (File, Edit, View, Insert, Format, Tools, Extensions, Help).
  */
 
@@ -74,7 +74,7 @@ export class MenuBuilder {
                 click: () => this.windowManager.send('doc:export', { format: 'plaintext' }),
               },
               {
-                label: 'Cognition Document (.cog)',
+                label: 'Cognitience Document (.cog)',
                 click: () => this.windowManager.send('doc:export', { format: 'cog' }),
               },
             ],
@@ -392,7 +392,7 @@ export class MenuBuilder {
               const result = await dialog.showOpenDialog({
                 title: 'Install Extension',
                 filters: [
-                  { name: 'Cognition Plugin', extensions: ['cogwp', 'zip'] },
+                  { name: 'Cognitience Plugin', extensions: ['cogwp', 'zip'] },
                   { name: 'All Files', extensions: ['*'] },
                 ],
                 properties: ['openFile'],
@@ -444,11 +444,11 @@ export class MenuBuilder {
         submenu: [
           {
             label: 'Documentation',
-            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognition-wp#readme'),
+            click: () => shell.openExternal('https://github.com/wailonbrowngh/cognitience-wp#readme'),
           },
           {
             label: 'Extension API Reference',
-            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognition-wp/tree/main/docs'),
+            click: () => shell.openExternal('https://github.com/wailonbrowngh/cognitience-wp/tree/main/docs'),
           },
           {
             label: 'Keyboard Shortcuts',
@@ -458,7 +458,7 @@ export class MenuBuilder {
           { type: 'separator' },
           {
             label: 'Report Issue',
-            click: () => shell.openExternal('https://github.com/Maq-Swarm/cognition-wp/issues'),
+            click: () => shell.openExternal('https://github.com/wailonbrowngh/cognitience-wp/issues'),
           },
           {
             label: 'Check for Updates',
@@ -475,15 +475,15 @@ export class MenuBuilder {
           },
           { type: 'separator' },
           {
-            label: 'About Cognition WP',
+            label: 'About Cognitience WP',
             click: () => {
               const win = this.windowManager.getMainWindow();
               if (win) {
                 dialog.showMessageBox(win, {
                   type: 'info',
-                  title: 'About Cognition WP',
-                  message: 'Cognition WP',
-                  detail: 'The VS Code of word processors.\n\nVersion: 1.1.0\nPublisher: Maq-Swarm\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
+                  title: 'About Cognitience WP',
+                  message: 'Cognitience WP',
+                  detail: 'The VS Code of word processors.\n\nVersion: 1.1.0\nPublisher: wailonbrowngh\nLicense: MIT\nElectron: ' + process.versions.electron + '\nNode: ' + process.versions.node + '\nV8: ' + process.versions.v8,
                   icon: undefined,
                 });
               }
@@ -498,10 +498,10 @@ export class MenuBuilder {
 
   private buildThemeMenu(): Electron.MenuItemConstructorOptions[] {
     const themes = [
-      { id: 'cognition-dark', label: 'Cognition Dark' },
-      { id: 'cognition-light', label: 'Cognition Light' },
-      { id: 'cognition-sepia', label: 'Cognition Sepia' },
-      { id: 'cognition-contrast-dark', label: 'High Contrast Dark' },
+      { id: 'cognitience-dark', label: 'Cognitience Dark' },
+      { id: 'cognitience-light', label: 'Cognitience Light' },
+      { id: 'cognitience-sepia', label: 'Cognitience Sepia' },
+      { id: 'cognitience-contrast-dark', label: 'High Contrast Dark' },
     ];
 
     const currentTheme = this.configStore.get('theme.current') as string;

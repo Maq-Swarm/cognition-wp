@@ -1,5 +1,5 @@
 /**
- * Word Count Pro — Sample Extension for Cognition WP
+ * Word Count Pro — Sample Extension for Cognitience WP
  * Demonstrates the extension API: commands, status bar, configuration, notifications.
  */
 

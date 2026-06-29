@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Main Process Entry Point
+ * Cognitience WP — Main Process Entry Point
  * The VS Code of word processors.
  */
 
@@ -57,7 +57,7 @@ app.whenReady().then(async () => {
     windowManager.openFile(openFile);
   }
 
-  console.log('[Cognition WP] Application started successfully');
+  console.log('[Cognitience WP] Application started successfully');
 });
 
 app.on('window-all-closed', () => {

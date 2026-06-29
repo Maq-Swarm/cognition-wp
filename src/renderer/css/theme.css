@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════
-   Cognition WP — Theme System
+   Cognitience WP — Theme System
    CSS variables for all built-in themes.
    ═══════════════════════════════════════════════════════ */
 
-/* ── Cognition Dark ─────────────────────────────────────── */
+/* ── Cognitience Dark ─────────────────────────────────────── */
 :root,
-[data-theme="cognition-dark"] {
+[data-theme="cognitience-dark"] {
   --bg-editor: #1e1e2e;
   --fg-editor: #cdd6f4;
   --bg-selection: #585b70;
@@ -48,8 +48,8 @@
   --editor-padding: 40px;
 }
 
-/* ── Cognition Light ────────────────────────────────────── */
-[data-theme="cognition-light"] {
+/* ── Cognitience Light ────────────────────────────────────── */
+[data-theme="cognitience-light"] {
   --bg-editor: #ffffff;
   --fg-editor: #1e1e2e;
   --bg-selection: #cba6f7;
@@ -87,8 +87,8 @@
   --bg-active: rgba(108, 92, 231, 0.1);
 }
 
-/* ── Cognition Sepia ────────────────────────────────────── */
-[data-theme="cognition-sepia"] {
+/* ── Cognitience Sepia ────────────────────────────────────── */
+[data-theme="cognitience-sepia"] {
   --bg-editor: #f4ecd8;
   --fg-editor: #5b4636;
   --bg-selection: #d4c4a8;
@@ -127,7 +127,7 @@
 }
 
 /* ── High Contrast Dark ────────────────────────────────── */
-[data-theme="cognition-contrast-dark"] {
+[data-theme="cognitience-contrast-dark"] {
   --bg-editor: #000000;
   --fg-editor: #ffffff;
   --bg-selection: #264f78;

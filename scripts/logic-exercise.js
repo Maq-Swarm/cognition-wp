@@ -100,7 +100,7 @@ async function exerciseExports() {
     version: '2.0.0',
     metadata: { title: 'Legacy', author: 'test' },
     content: { html: '<p>Legacy body</p>', markdown: 'Legacy body' },
-    styles: { theme: 'cognition-light' },
+    styles: { theme: 'cognitience-light' },
     history: [],
   });
   const legacyParsed = em.parseCogFile(legacy);

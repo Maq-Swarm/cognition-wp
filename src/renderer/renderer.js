@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Renderer Application
+ * Cognitience WP — Renderer Application
  * The main renderer process: editor, UI, command palette, extension integration.
  */
 
@@ -7,7 +7,7 @@
 // STATE
 // ═══════════════════════════════════════════════════════════
 
-const CognitionWP = {
+const CognitienceWP = {
   editor: null,
   docTitle: 'Untitled',
   docPath: null,
@@ -15,7 +15,7 @@ const CognitionWP = {
   isDirty: false,
   wordCount: 0,
   charCount: 0,
-  currentTheme: 'cognition-light',
+  currentTheme: 'cognitience-light',
   config: {},
   commands: [],
   sidebarVisible: true,
@@ -38,17 +38,17 @@ const CognitionWP = {
 // ═══════════════════════════════════════════════════════════
 
 async function init() {
-  CognitionWP.editor = document.getElementById('editor-page');
+  CognitienceWP.editor = document.getElementById('editor-page');
 
   // Load config
   try {
-    CognitionWP.config = await window.cognition.config.getAll();
+    CognitienceWP.config = await window.cognitience.config.getAll();
   } catch (e) {
     console.warn('Could not load config, using defaults', e);
   }
 
   // Apply theme
-  const savedTheme = await window.cognition.theme.get();
+  const savedTheme = await window.cognitience.theme.get();
   if (savedTheme) {
     applyTheme(savedTheme);
   }
@@ -74,8 +74,8 @@ async function init() {
 
   // Load extensions
   try {
-    CognitionWP.extensions = await window.cognition.extensions.list();
-    console.log(`[Cognition WP] Loaded ${CognitionWP.extensions.length} extension(s)`);
+    CognitienceWP.extensions = await window.cognitience.extensions.list();
+    console.log(`[Cognitience WP] Loaded ${CognitienceWP.extensions.length} extension(s)`);
   } catch (e) {
     console.warn('Could not load extensions', e);
   }
@@ -86,7 +86,7 @@ async function init() {
   // Show sidebar with explorer
   showSidebarView('explorer');
 
-  console.log('[Cognition WP] Renderer initialized.');
+  console.log('[Cognitience WP] Renderer initialized.');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -95,19 +95,19 @@ async function init() {
 
 function applyTheme(themeId) {
   document.documentElement.setAttribute('data-theme', themeId);
-  CognitionWP.currentTheme = themeId;
+  CognitienceWP.currentTheme = themeId;
   const themeLabels = {
-    'cognition-dark': 'Cognition Dark',
-    'cognition-light': 'Cognition Light',
-    'cognition-sepia': 'Cognition Sepia',
-    'cognition-contrast-dark': 'High Contrast Dark',
+    'cognitience-dark': 'Cognitience Dark',
+    'cognitience-light': 'Cognitience Light',
+    'cognitience-sepia': 'Cognitience Sepia',
+    'cognitience-contrast-dark': 'High Contrast Dark',
   };
   const label = document.getElementById('status-theme');
   if (label) label.textContent = themeLabels[themeId] || themeId;
 }
 
 function setupThemeListener() {
-  window.cognition.theme.onChanged((themeId) => {
+  window.cognitience.theme.onChanged((themeId) => {
     applyTheme(themeId);
   });
 }
@@ -117,7 +117,7 @@ function setupThemeListener() {
 // ═══════════════════════════════════════════════════════════
 
 function applyConfigToEditor() {
-  const cfg = CognitionWP.config;
+  const cfg = CognitienceWP.config;
   const root = document.documentElement;
 
   if (cfg['editor.fontSize']) {
@@ -137,18 +137,18 @@ function applyConfigToEditor() {
   }
 
   const spellcheck = cfg['editor.spellcheck'];
-  CognitionWP.spellCheckEnabled = spellcheck !== false;
-  if (CognitionWP.editor) {
+  CognitienceWP.spellCheckEnabled = spellcheck !== false;
+  if (CognitienceWP.editor) {
     // Enable native Hunspell spellcheck built into Electron
-    CognitionWP.editor.spellcheck = CognitionWP.spellCheckEnabled;
-    CognitionWP.editor.setAttribute('data-spellcheck', String(CognitionWP.spellCheckEnabled));
+    CognitienceWP.editor.spellcheck = CognitienceWP.spellCheckEnabled;
+    CognitienceWP.editor.setAttribute('data-spellcheck', String(CognitienceWP.spellCheckEnabled));
   }
   const spellStatus = document.getElementById('status-spellcheck');
   if (spellStatus) {
-    spellStatus.textContent = 'Spell Check: ' + (CognitionWP.spellCheckEnabled ? 'ON' : 'OFF');
+    spellStatus.textContent = 'Spell Check: ' + (CognitienceWP.spellCheckEnabled ? 'ON' : 'OFF');
   }
   // Re-run spellcheck immediately when toggled
-  if (CognitionWP.spellCheckEnabled) {
+  if (CognitienceWP.spellCheckEnabled) {
     runSpellCheck();
   } else {
     clearSpellCheckHighlights();
@@ -156,8 +156,8 @@ function applyConfigToEditor() {
 }
 
 function setupConfigListener() {
-  window.cognition.config.onChanged((key, value) => {
-    CognitionWP.config[key] = value;
+  window.cognitience.config.onChanged((key, value) => {
+    CognitienceWP.config[key] = value;
     applyConfigToEditor();
   });
 }
@@ -167,7 +167,7 @@ function setupConfigListener() {
 // ═══════════════════════════════════════════════════════════
 
 function setupEditorEvents() {
-  const editor = CognitionWP.editor;
+  const editor = CognitienceWP.editor;
 
   editor.addEventListener('input', () => {
     markDirty();
@@ -201,7 +201,7 @@ function setupEditorEvents() {
   document.getElementById('editor-scroll').addEventListener('scroll', () => {
     clearTimeout(scrollTimer);
     scrollTimer = setTimeout(() => {
-      if (CognitionWP.config['editor.autoSave'] && CognitionWP.isDirty) {
+      if (CognitienceWP.config['editor.autoSave'] && CognitienceWP.isDirty) {
         saveDocument();
       }
     }, 1000);
@@ -209,8 +209,8 @@ function setupEditorEvents() {
 }
 
 function markDirty() {
-  if (!CognitionWP.isDirty) {
-    CognitionWP.isDirty = true;
+  if (!CognitienceWP.isDirty) {
+    CognitienceWP.isDirty = true;
     updateTitle();
     const saveState = document.getElementById('status-save-state');
     if (saveState) saveState.textContent = '● Unsaved';
@@ -218,7 +218,7 @@ function markDirty() {
 }
 
 function markClean() {
-  CognitionWP.isDirty = false;
+  CognitienceWP.isDirty = false;
   updateTitle();
   const saveState = document.getElementById('status-save-state');
   if (saveState) saveState.textContent = '';
@@ -227,8 +227,8 @@ function markClean() {
 function updateTitle() {
   const titleEl = document.getElementById('doc-title');
   if (titleEl) {
-    const dirty = CognitionWP.isDirty ? '● ' : '';
-    titleEl.textContent = `${dirty}${CognitionWP.docTitle} — Cognition WP`;
+    const dirty = CognitienceWP.isDirty ? '● ' : '';
+    titleEl.textContent = `${dirty}${CognitienceWP.docTitle} — Cognitience WP`;
   }
 }
 
@@ -237,18 +237,18 @@ function updateTitle() {
 // ═══════════════════════════════════════════════════════════
 
 function updateWordCount() {
-  const text = CognitionWP.editor.innerText || '';
+  const text = CognitienceWP.editor.innerText || '';
   const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-  CognitionWP.wordCount = words.length;
-  CognitionWP.charCount = text.length;
+  CognitienceWP.wordCount = words.length;
+  CognitienceWP.charCount = text.length;
 
   const wcEl = document.getElementById('status-word-count');
   const ccEl = document.getElementById('status-char-count');
-  if (wcEl) wcEl.textContent = `${CognitionWP.wordCount} words`;
-  if (ccEl) ccEl.textContent = `${CognitionWP.charCount} chars`;
+  if (wcEl) wcEl.textContent = `${CognitienceWP.wordCount} words`;
+  if (ccEl) ccEl.textContent = `${CognitienceWP.charCount} chars`;
 
   // Reading time
-  const readingTime = Math.max(1, Math.ceil(CognitionWP.wordCount / 200));
+  const readingTime = Math.max(1, Math.ceil(CognitienceWP.wordCount / 200));
   const docInfo = document.getElementById('status-doc-info');
   if (docInfo) {
     docInfo.textContent = `~${readingTime} min read`;
@@ -261,7 +261,7 @@ function updateCursorPosition() {
 
   const range = sel.getRangeAt(0);
   const preRange = document.createRange();
-  preRange.selectNodeContents(CognitionWP.editor);
+  preRange.selectNodeContents(CognitienceWP.editor);
   preRange.setEnd(range.startContainer, range.startOffset);
 
   const text = preRange.toString();
@@ -300,7 +300,7 @@ function setupToolbar() {
       } else {
         document.execCommand('formatBlock', false, tag.toUpperCase());
       }
-      CognitionWP.editor.focus();
+      CognitienceWP.editor.focus();
     });
   }
 
@@ -313,12 +313,12 @@ function setupToolbar() {
       // Use execCommand to wrap selection in a span with the font size
       document.execCommand('fontSize', false, '7');
       // Now find the font[size="7"] elements and replace with CSS
-      const fontElements = CognitionWP.editor.querySelectorAll('font[size="7"]');
+      const fontElements = CognitienceWP.editor.querySelectorAll('font[size="7"]');
       fontElements.forEach(el => {
         el.removeAttribute('size');
         el.style.fontSize = size + 'px';
       });
-      CognitionWP.editor.focus();
+      CognitienceWP.editor.focus();
     });
   }
 
@@ -331,7 +331,7 @@ function setupToolbar() {
     textColor.addEventListener('change', () => {
       document.execCommand('foreColor', false, textColor.value);
       if (textColorBar) textColorBar.style.background = textColor.value;
-      CognitionWP.editor.focus();
+      CognitienceWP.editor.focus();
     });
   }
 
@@ -344,13 +344,13 @@ function setupToolbar() {
     bgColor.addEventListener('change', () => {
       document.execCommand('hiliteColor', false, bgColor.value);
       if (bgColorBar) bgColorBar.style.background = bgColor.value;
-      CognitionWP.editor.focus();
+      CognitienceWP.editor.focus();
     });
   }
 }
 
 function executeFormatCommand(cmd) {
-  CognitionWP.editor.focus();
+  CognitienceWP.editor.focus();
 
   switch (cmd) {
     case 'bold':
@@ -422,7 +422,7 @@ function toggleChecklistItem() {
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
   let node = sel.anchorNode;
-  while (node && node !== CognitionWP.editor) {
+  while (node && node !== CognitienceWP.editor) {
     if (node.classList && node.classList.contains('checklist')) {
       // Toggle the current list item
       let li = node;
@@ -442,11 +442,11 @@ function toggleChecklistItem() {
 // ═══════════════════════════════════════════════════════════
 
 function insertTemplate(templateKey) {
-  if (!window.COGNITION_TEMPLATES) {
+  if (!window.COGNITIENCE_TEMPLATES) {
     showNotification('error', 'Templates', 'Templates not loaded');
     return;
   }
-  const template = window.COGNITION_TEMPLATES[templateKey];
+  const template = window.COGNITIENCE_TEMPLATES[templateKey];
   if (!template) {
     showNotification('error', 'Templates', 'Template not found: ' + templateKey);
     return;
@@ -458,23 +458,23 @@ function insertTemplate(templateKey) {
   }
 
   // Confirm if editor has content
-  if (CognitionWP.editor.innerHTML.trim() &&
-      CognitionWP.editor.innerHTML.trim() !== '<h1>Welcome to Cognition WP</h1><p>The open-source, extensible word processor. Start typing to begin your document.</p><p>Cognition WP is an <em>open-source</em>, <u>extensible</u> word processor built on Electron and TypeScript. It features a full extension system for adding new capabilities.</p><h2>Key Features</h2><ul><li>Rich text editing with full formatting toolbar</li><li>Extension system for plugins and add-ons</li><li>Multiple themes (Light, Dark, Sepia, High Contrast)</li><li>Markdown import/export support</li><li>Command palette (Ctrl+Shift+P)</li><li>Full keyboard navigation</li></ul><blockquote>Tip: Press Ctrl+Shift+P to open the command palette and discover everything Cognition WP can do.</blockquote><p>Press <kbd>Ctrl+N</kbd> for a new document, or just start editing this one.</p>') {
+  if (CognitienceWP.editor.innerHTML.trim() &&
+      CognitienceWP.editor.innerHTML.trim() !== '<h1>Welcome to Cognitience WP</h1><p>The open-source, extensible word processor. Start typing to begin your document.</p><p>Cognitience WP is an <em>open-source</em>, <u>extensible</u> word processor built on Electron and TypeScript. It features a full extension system for adding new capabilities.</p><h2>Key Features</h2><ul><li>Rich text editing with full formatting toolbar</li><li>Extension system for plugins and add-ons</li><li>Multiple themes (Light, Dark, Sepia, High Contrast)</li><li>Markdown import/export support</li><li>Command palette (Ctrl+Shift+P)</li><li>Full keyboard navigation</li></ul><blockquote>Tip: Press Ctrl+Shift+P to open the command palette and discover everything Cognitience WP can do.</blockquote><p>Press <kbd>Ctrl+N</kbd> for a new document, or just start editing this one.</p>') {
     if (!confirm('Replace current document with template?')) return;
   }
 
-  CognitionWP.editor.innerHTML = template.insert();
-  CognitionWP.docTitle = template.name;
+  CognitienceWP.editor.innerHTML = template.insert();
+  CognitienceWP.docTitle = template.name;
   markDirty();
   updateWordCount();
   updateOutline();
   updateDocTitle(template.name);
   showNotification('info', 'Template', 'Inserted: ' + template.name);
-  CognitionWP.editor.focus();
+  CognitienceWP.editor.focus();
 }
 
 function renderTemplates(container) {
-  const templates = window.COGNITION_TEMPLATES || {};
+  const templates = window.COGNITIENCE_TEMPLATES || {};
   const icons = {
     arxiv: 'paper', outline: 'list', email: 'envelope', book: 'book', blank: 'file'
   };
@@ -515,7 +515,7 @@ function renderTemplates(container) {
 async function checkForUpdates() {
   showNotification('info', 'Updates', 'Checking for updates...');
   try {
-    const result = await window.cognition.updates.check();
+    const result = await window.cognitience.updates.check();
     if (result.error) {
       showNotification('warning', 'Update Check', 'Could not check for updates. Visit Settings to download manually.');
       return;
@@ -525,7 +525,7 @@ async function checkForUpdates() {
         `Version ${result.latestVersion} is available (current: ${result.currentVersion}). Click to download.`);
       // In a full implementation, we'd show a dialog with release notes and download button
       if (confirm(`Version ${result.latestVersion} is available!\n\nCurrent: ${result.currentVersion}\nLatest: ${result.latestVersion}\n\nWould you like to download the update?`)) {
-        window.cognition.updates.downloadAndInstall(result.downloadUrl);
+        window.cognitience.updates.downloadAndInstall(result.downloadUrl);
       }
     } else {
       showNotification('success', 'Up to Date',
@@ -558,7 +558,7 @@ function showLinkDialog() {
     const url = urlInput.value.trim();
     const text = overlay.querySelector('#modal-link-text').value.trim();
     if (url) {
-      CognitionWP.editor.focus();
+      CognitienceWP.editor.focus();
       if (text) {
         document.execCommand('insertHTML', false, `<a href="${url}">${text}</a>`);
       } else {
@@ -591,14 +591,14 @@ function showImageDialog() {
   urlInput.focus();
   overlay.querySelector('#modal-cancel').addEventListener('click', () => overlay.remove());
   overlay.querySelector('#modal-browse').addEventListener('click', async () => {
-    const result = await window.cognition.fs.browseImage();
+    const result = await window.cognitience.fs.browseImage();
     if (result) urlInput.value = result;
   });
   const submit = () => {
     const url = urlInput.value.trim();
     const alt = overlay.querySelector('#modal-img-alt').value.trim();
     if (url) {
-      CognitionWP.editor.focus();
+      CognitienceWP.editor.focus();
       document.execCommand('insertHTML', false, `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;" />`);
     }
     overlay.remove();
@@ -638,7 +638,7 @@ function showTableDialog() {
       html += '</tr>';
     }
     html += '</tbody></table><p></p>';
-    CognitionWP.editor.focus();
+    CognitienceWP.editor.focus();
     document.execCommand('insertHTML', false, html);
     overlay.remove();
   });
@@ -680,13 +680,13 @@ function updateToolbarState() {
 
 function setupWindowControls() {
   document.getElementById('btn-close').addEventListener('click', () => {
-    window.cognition.window.close();
+    window.cognitience.window.close();
   });
   document.getElementById('btn-minimize').addEventListener('click', () => {
-    window.cognition.window.minimize();
+    window.cognitience.window.minimize();
   });
   document.getElementById('btn-maximize').addEventListener('click', () => {
-    window.cognition.window.maximize();
+    window.cognitience.window.maximize();
   });
   document.getElementById('btn-command-palette').addEventListener('click', () => {
     openCommandPalette();
@@ -712,7 +712,7 @@ function showSidebarView(view) {
   const content = document.getElementById('sidebar-content');
 
   sidebar.classList.remove('hidden');
-  CognitionWP.sidebarVisible = true;
+  CognitienceWP.sidebarVisible = true;
 
   switch (view) {
     case 'explorer':
@@ -750,15 +750,15 @@ function renderExplorer(container) {
   container.innerHTML = `
     <div class="sidebar-section">
       <div class="sidebar-section-header">Open Document</div>
-      <div class="sidebar-item" onclick="CognitionWP.editor.focus()">
+      <div class="sidebar-item" onclick="CognitienceWP.editor.focus()">
         <span class="sidebar-icon">📄</span>
-        <span class="sidebar-name">${CognitionWP.docTitle}</span>
+        <span class="sidebar-name">${CognitienceWP.docTitle}</span>
       </div>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-header">Recent Files</div>
-      ${CognitionWP.recentFiles.length > 0
-        ? CognitionWP.recentFiles.map(f => `
+      ${CognitienceWP.recentFiles.length > 0
+        ? CognitienceWP.recentFiles.map(f => `
           <div class="sidebar-item" onclick="openRecentFile('${f.path.replace(/'/g, "\\'")}')">
             <span class="sidebar-icon">📃</span>
             <span class="sidebar-name">${f.name}</span>
@@ -814,7 +814,7 @@ function renderSearch(container) {
 }
 
 function renderOutline(container) {
-  const headings = CognitionWP.editor.querySelectorAll('h1, h2, h3, h4, h5, h6');
+  const headings = CognitienceWP.editor.querySelectorAll('h1, h2, h3, h4, h5, h6');
   container.innerHTML = '';
   if (headings.length === 0) {
     container.innerHTML = '<div style="padding:8px 12px;color:var(--fg-tab);font-size:13px;">No headings found. Add headings (Ctrl+1, Ctrl+2, etc.) to create an outline.</div>';
@@ -835,7 +835,7 @@ function renderOutline(container) {
 }
 
 function renderExtensions(container) {
-  const exts = CognitionWP.extensions;
+  const exts = CognitienceWP.extensions;
   container.innerHTML = `
     <div style="padding:8px 12px;">
       <input type="text" class="search-input" id="ext-search" placeholder="Search extensions…" style="width:100%;margin-bottom:8px;" />
@@ -862,7 +862,7 @@ function renderExtensions(container) {
 }
 
 function renderSettings(container) {
-  const cfg = CognitionWP.config;
+  const cfg = CognitienceWP.config;
   container.innerHTML = `
     <div class="settings-container">
       <div class="settings-group">
@@ -898,10 +898,10 @@ function renderSettings(container) {
           <span class="setting-label">Theme</span>
           <div class="setting-control">
             <select id="set-theme">
-              <option value="cognition-dark" ${cfg['theme.current'] === 'cognition-dark' ? 'selected' : ''}>Cognition Dark</option>
-              <option value="cognition-light" ${cfg['theme.current'] === 'cognition-light' ? 'selected' : ''}>Cognition Light</option>
-              <option value="cognition-sepia" ${cfg['theme.current'] === 'cognition-sepia' ? 'selected' : ''}>Cognition Sepia</option>
-              <option value="cognition-contrast-dark" ${cfg['theme.current'] === 'cognition-contrast-dark' ? 'selected' : ''}>High Contrast Dark</option>
+              <option value="cognitience-dark" ${cfg['theme.current'] === 'cognitience-dark' ? 'selected' : ''}>Cognitience Dark</option>
+              <option value="cognitience-light" ${cfg['theme.current'] === 'cognitience-light' ? 'selected' : ''}>Cognitience Light</option>
+              <option value="cognitience-sepia" ${cfg['theme.current'] === 'cognitience-sepia' ? 'selected' : ''}>Cognitience Sepia</option>
+              <option value="cognitience-contrast-dark" ${cfg['theme.current'] === 'cognitience-contrast-dark' ? 'selected' : ''}>High Contrast Dark</option>
             </select>
           </div>
         </div>
@@ -916,7 +916,7 @@ function renderSettings(container) {
         <div class="settings-group-title">Templates</div>
         <div class="setting-row" style="display:block;">
           <span class="setting-label" style="display:block;margin-bottom:6px;">Document Templates</span>
-          <div style="font-size:12px;color:var(--fg-tab);margin-bottom:8px;">Cognition WP includes built-in templates for arXiv research papers, outlines, emails, book manuscripts, and blank documents. Use templates to jumpstart your writing.</div>
+          <div style="font-size:12px;color:var(--fg-tab);margin-bottom:8px;">Cognitience WP includes built-in templates for arXiv research papers, outlines, emails, book manuscripts, and blank documents. Use templates to jumpstart your writing.</div>
           <button class="panel-btn primary" id="set-browse-templates">Browse Templates</button>
         </div>
       </div>
@@ -925,7 +925,7 @@ function renderSettings(container) {
         <div class="setting-row">
           <span class="setting-label">Current Version</span>
           <div class="setting-control">
-            <span style="font-size:13px;color:var(--fg-tab);">v${(CognitionWP.config && CognitionWP.config['app.version']) || '1.1.0'}</span>
+            <span style="font-size:13px;color:var(--fg-tab);">v${(CognitienceWP.config && CognitienceWP.config['app.version']) || '1.1.0'}</span>
           </div>
         </div>
         <div class="setting-row">
@@ -971,22 +971,22 @@ function renderSettings(container) {
 
   // Wire up settings
   document.getElementById('set-font-size').addEventListener('change', (e) => {
-    window.cognition.config.set('editor.fontSize', parseInt(e.target.value));
+    window.cognitience.config.set('editor.fontSize', parseInt(e.target.value));
   });
   document.getElementById('set-word-wrap').addEventListener('change', (e) => {
-    window.cognition.config.set('editor.wordWrap', e.target.checked);
+    window.cognitience.config.set('editor.wordWrap', e.target.checked);
   });
   document.getElementById('set-spellcheck').addEventListener('change', (e) => {
-    window.cognition.config.set('editor.spellcheck', e.target.checked);
+    window.cognitience.config.set('editor.spellcheck', e.target.checked);
   });
   document.getElementById('set-autosave').addEventListener('change', (e) => {
-    window.cognition.config.set('editor.autoSave', e.target.checked);
+    window.cognitience.config.set('editor.autoSave', e.target.checked);
   });
   document.getElementById('set-theme').addEventListener('change', (e) => {
-    window.cognition.theme.set(e.target.value);
+    window.cognitience.theme.set(e.target.value);
   });
   document.getElementById('set-max-width').addEventListener('change', (e) => {
-    window.cognition.config.set('editor.maxLineWidth', parseInt(e.target.value));
+    window.cognitience.config.set('editor.maxLineWidth', parseInt(e.target.value));
   });
   // Templates
   document.getElementById('set-browse-templates').addEventListener('click', () => {
@@ -997,11 +997,11 @@ function renderSettings(container) {
     checkForUpdates();
   });
   document.getElementById('set-autoupdate').addEventListener('change', (e) => {
-    window.cognition.config.set('app.autoUpdate', e.target.checked);
+    window.cognitience.config.set('app.autoUpdate', e.target.checked);
   });
   // Plugins & Development
   document.getElementById('set-create-extension').addEventListener('click', async () => {
-    const result = await window.cognition.extensions.scaffoldPlugin();
+    const result = await window.cognitience.extensions.scaffoldPlugin();
     if (result && result.success) {
       showNotification('success', 'Plugin Created', `Plugin scaffolded at: ${result.path}`);
     } else if (result && result.error) {
@@ -1009,7 +1009,7 @@ function renderSettings(container) {
     }
   });
   document.getElementById('set-dev-mode').addEventListener('change', (e) => {
-    window.cognition.config.set('app.developerMode', e.target.checked);
+    window.cognitience.config.set('app.developerMode', e.target.checked);
     showNotification('info', 'Developer Mode', e.target.checked ? 'Developer mode enabled' : 'Developer mode disabled');
   });
   document.getElementById('set-view-docs').addEventListener('click', () => {
@@ -1068,7 +1068,7 @@ function setupKeyboardShortcuts() {
     // F11: Fullscreen
     if (e.key === 'F11') {
       e.preventDefault();
-      window.cognition.window.fullscreen();
+      window.cognitience.window.fullscreen();
     }
     // Ctrl+/: Keyboard shortcuts help
     if (ctrl && e.key === '/') {
@@ -1109,7 +1109,7 @@ function setupKeyboardShortcuts() {
 }
 
 function isEditorFocused() {
-  return document.activeElement === CognitionWP.editor;
+  return document.activeElement === CognitienceWP.editor;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1127,7 +1127,7 @@ const BUILTIN_COMMANDS = [
   { id: 'doc:export:docx', title: 'Export as Word (.docx)', category: 'File' },
   { id: 'doc:export:doc', title: 'Export as Word 97-2003 (.doc)', category: 'File' },
   { id: 'doc:export:txt', title: 'Export as Plain Text', category: 'File' },
-  { id: 'doc:export:cog', title: 'Export as Cognition Document', category: 'File' },
+  { id: 'doc:export:cog', title: 'Export as Cognitience Document', category: 'File' },
   { id: 'doc:print', title: 'Print…', category: 'File', shortcut: 'Ctrl+P' },
   { id: 'editor:find', title: 'Find', category: 'Edit', shortcut: 'Ctrl+F' },
   { id: 'editor:replace', title: 'Replace', category: 'Edit', shortcut: 'Ctrl+H' },
@@ -1162,9 +1162,9 @@ const BUILTIN_COMMANDS = [
   { id: 'view:zoomOut', title: 'Zoom Out', category: 'View' },
   { id: 'view:zoomReset', title: 'Reset Zoom', category: 'View' },
   { id: 'view:commandPalette', title: 'Command Palette', category: 'View', shortcut: 'Ctrl+Shift+P' },
-  { id: 'theme:dark', title: 'Theme: Cognition Dark', category: 'Theme' },
-  { id: 'theme:light', title: 'Theme: Cognition Light', category: 'Theme' },
-  { id: 'theme:sepia', title: 'Theme: Cognition Sepia', category: 'Theme' },
+  { id: 'theme:dark', title: 'Theme: Cognitience Dark', category: 'Theme' },
+  { id: 'theme:light', title: 'Theme: Cognitience Light', category: 'Theme' },
+  { id: 'theme:sepia', title: 'Theme: Cognitience Sepia', category: 'Theme' },
   { id: 'theme:contrast', title: 'Theme: High Contrast', category: 'Theme' },
   { id: 'tools:wordCount', title: 'Word Count', category: 'Tools' },
   { id: 'tools:settings', title: 'Settings', category: 'Tools', shortcut: 'Ctrl+,' },
@@ -1181,7 +1181,7 @@ const BUILTIN_COMMANDS = [
   { id: 'ext:docs:publish', title: 'Plugin Docs: Publishing & Distribution', category: 'Extensions' },
   { id: 'ext:docs:example', title: 'Plugin Docs: Example Extension', category: 'Extensions' },
   { id: 'help:shortcuts', title: 'Keyboard Shortcuts', category: 'Help' },
-  { id: 'help:about', title: 'About Cognition WP', category: 'Help' },
+  { id: 'help:about', title: 'About Cognitience WP', category: 'Help' },
 ];
 
 function setupCommandPalette() {
@@ -1221,7 +1221,7 @@ function filterCommands(query) {
   // Combine builtin commands with extension commands
   let allCommands = [...BUILTIN_COMMANDS];
   try {
-    const extCommands = window.cognition.extensions.getCommandsSync?.() || [];
+    const extCommands = window.cognitience.extensions.getCommandsSync?.() || [];
     extCommands.forEach(cmd => {
       allCommands.push({ id: cmd, title: cmd.split('.').pop(), category: 'Extension' });
     });
@@ -1326,15 +1326,15 @@ function executeCommandById(cmdId) {
     case 'view:toggleSidebar': toggleSidebar(); break;
     case 'view:toggleOutline': toggleRightPanel(); break;
     case 'view:toggleFocusMode': toggleFocusMode(); break;
-    case 'view:toggleFullscreen': window.cognition.window.fullscreen(); break;
+    case 'view:toggleFullscreen': window.cognitience.window.fullscreen(); break;
     case 'view:zoomIn': zoomEditor(1); break;
     case 'view:zoomOut': zoomEditor(-1); break;
     case 'view:zoomReset': zoomEditor(0, true); break;
     case 'view:commandPalette': openCommandPalette(); break;
-    case 'theme:dark': applyTheme('cognition-dark'); window.cognition.theme.set('cognition-dark'); break;
-    case 'theme:light': applyTheme('cognition-light'); window.cognition.theme.set('cognition-light'); break;
-    case 'theme:sepia': applyTheme('cognition-sepia'); window.cognition.theme.set('cognition-sepia'); break;
-    case 'theme:contrast': applyTheme('cognition-contrast-dark'); window.cognition.theme.set('cognition-contrast-dark'); break;
+    case 'theme:dark': applyTheme('cognitience-dark'); window.cognitience.theme.set('cognitience-dark'); break;
+    case 'theme:light': applyTheme('cognitience-light'); window.cognitience.theme.set('cognitience-light'); break;
+    case 'theme:sepia': applyTheme('cognitience-sepia'); window.cognitience.theme.set('cognitience-sepia'); break;
+    case 'theme:contrast': applyTheme('cognitience-contrast-dark'); window.cognitience.theme.set('cognitience-contrast-dark'); break;
     case 'tools:wordCount': showWordCountDialog(); break;
     case 'tools:settings': showSidebarView('settings'); break;
     case 'ext:manage': showSidebarView('extensions'); break;
@@ -1352,7 +1352,7 @@ function executeCommandById(cmdId) {
     case 'help:shortcuts': showShortcutsHelp(); break;
     case 'help:about': showAboutDialog(); break;
     default:
-      window.cognition.extensions.executeCommand(cmdId).catch(err => {
+      window.cognitience.extensions.executeCommand(cmdId).catch(err => {
         showNotification('error', 'Command Error', err.message);
       });
   }
@@ -1364,79 +1364,79 @@ function executeCommandById(cmdId) {
 
 function updateDocTitle(title) {
   const el = document.getElementById('doc-title');
-  if (el) el.textContent = title + ' — Cognition WP';
+  if (el) el.textContent = title + ' — Cognitience WP';
 }
 
 async function newDocument() {
-  if (CognitionWP.isDirty && !confirm('Discard unsaved changes?')) return;
-  CognitionWP.editor.innerHTML = '<h1>Untitled Document</h1><p></p>';
-  CognitionWP.docTitle = 'Untitled';
-  CognitionWP.docPath = null;
-  CognitionWP.docFormat = 'rich';
+  if (CognitienceWP.isDirty && !confirm('Discard unsaved changes?')) return;
+  CognitienceWP.editor.innerHTML = '<h1>Untitled Document</h1><p></p>';
+  CognitienceWP.docTitle = 'Untitled';
+  CognitienceWP.docPath = null;
+  CognitienceWP.docFormat = 'rich';
   markClean();
   updateWordCount();
-  CognitionWP.editor.focus();
+  CognitienceWP.editor.focus();
   updateDocTitle('Untitled');
 }
 
 async function openDocument(filePath) {
-  const result = await window.cognition.documents.open(filePath);
+  const result = await window.cognitience.documents.open(filePath);
   if (!result) return;
 
-  CognitionWP.editor.innerHTML = result.content;
-  CognitionWP.docTitle = result.title;
-  CognitionWP.docPath = result.filePath;
-  CognitionWP.docFormat = result.format;
+  CognitienceWP.editor.innerHTML = result.content;
+  CognitienceWP.docTitle = result.title;
+  CognitienceWP.docPath = result.filePath;
+  CognitienceWP.docFormat = result.format;
   markClean();
   updateDocTitle(result.title);
 
   // Add to recent files
-  const exists = CognitionWP.recentFiles.find(f => f.path === result.filePath);
+  const exists = CognitienceWP.recentFiles.find(f => f.path === result.filePath);
   if (!exists) {
-    CognitionWP.recentFiles.unshift({ name: result.title, path: result.filePath });
-    if (CognitionWP.recentFiles.length > 10) CognitionWP.recentFiles.pop();
+    CognitienceWP.recentFiles.unshift({ name: result.title, path: result.filePath });
+    if (CognitienceWP.recentFiles.length > 10) CognitienceWP.recentFiles.pop();
   }
 
   updateWordCount();
   updateOutline();
-  CognitionWP.editor.focus();
+  CognitienceWP.editor.focus();
 }
 
 async function saveDocument() {
-  if (!CognitionWP.docPath) {
+  if (!CognitienceWP.docPath) {
     return saveAsDocument();
   }
-  const content = CognitionWP.editor.innerHTML;
-  await window.cognition.documents.save({
+  const content = CognitienceWP.editor.innerHTML;
+  await window.cognitience.documents.save({
     content,
-    filePath: CognitionWP.docPath,
-    format: CognitionWP.docFormat,
-    title: CognitionWP.docTitle,
+    filePath: CognitienceWP.docPath,
+    format: CognitienceWP.docFormat,
+    title: CognitienceWP.docTitle,
   });
   markClean();
-  showNotification('info', 'Saved', CognitionWP.docTitle);
+  showNotification('info', 'Saved', CognitienceWP.docTitle);
 }
 
 async function saveAsDocument() {
-  const content = CognitionWP.editor.innerHTML;
-  const result = await window.cognition.documents.saveAs({
+  const content = CognitienceWP.editor.innerHTML;
+  const result = await window.cognitience.documents.saveAs({
     content,
-    format: CognitionWP.docFormat,
-    title: CognitionWP.docTitle,
+    format: CognitienceWP.docFormat,
+    title: CognitienceWP.docTitle,
   });
   if (!result) return;
-  CognitionWP.docPath = result.filePath;
-  CognitionWP.docTitle = result.filePath.split(/[\\\/]/).pop().replace(/\.[^.]+$/, '');
-  updateDocTitle(CognitionWP.docTitle);
+  CognitienceWP.docPath = result.filePath;
+  CognitienceWP.docTitle = result.filePath.split(/[\\\/]/).pop().replace(/\.[^.]+$/, '');
+  updateDocTitle(CognitienceWP.docTitle);
   markClean();
-  showNotification('info', 'Saved', CognitionWP.docTitle);
+  showNotification('info', 'Saved', CognitienceWP.docTitle);
 }
 
 async function exportDocument(format) {
-  const content = CognitionWP.editor.innerHTML;
-  const title = CognitionWP.docTitle;
+  const content = CognitienceWP.editor.innerHTML;
+  const title = CognitienceWP.docTitle;
 
-  const result = await window.cognition.documents.export({ format, content, title });
+  const result = await window.cognitience.documents.export({ format, content, title });
   if (result && result.success) {
     showNotification('success', 'Exported', `Exported as ${format.toUpperCase()}`);
   } else if (result && result.error) {
@@ -1527,7 +1527,7 @@ function toggleFindReplace(showReplace) {
     document.getElementById('find-input').focus();
   } else if (showReplace === false) {
     panel.classList.add('hidden');
-    CognitionWP.editor.focus();
+    CognitienceWP.editor.focus();
     return;
   }
   if (showReplace) {
@@ -1555,9 +1555,9 @@ function doReplace(all) {
   if (!findVal) return;
 
   if (all) {
-    const content = CognitionWP.editor.innerHTML;
+    const content = CognitienceWP.editor.innerHTML;
     const newContent = content.replace(new RegExp(findVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), replaceVal);
-    CognitionWP.editor.innerHTML = newContent;
+    CognitienceWP.editor.innerHTML = newContent;
     showNotification('info', 'Replace All', `Replaced all occurrences of "${findVal}"`);
     markDirty();
     updateWordCount();
@@ -1581,7 +1581,7 @@ function doReplace(all) {
 function performSearch(query) {
   if (!query) return;
   const results = document.getElementById('search-results');
-  const text = CognitionWP.editor.innerText;
+  const text = CognitienceWP.editor.innerText;
   const lowerText = text.toLowerCase();
   const lowerQuery = query.toLowerCase();
   const matches = [];
@@ -1615,29 +1615,29 @@ function performSearch(query) {
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
-  CognitionWP.sidebarVisible = !CognitionWP.sidebarVisible;
-  sidebar.classList.toggle('hidden', !CognitionWP.sidebarVisible);
+  CognitienceWP.sidebarVisible = !CognitienceWP.sidebarVisible;
+  sidebar.classList.toggle('hidden', !CognitienceWP.sidebarVisible);
 }
 
 function toggleRightPanel() {
   const panel = document.getElementById('right-panel');
-  CognitionWP.rightPanelVisible = !CognitionWP.rightPanelVisible;
-  panel.classList.toggle('hidden', !CognitionWP.rightPanelVisible);
-  if (CognitionWP.rightPanelVisible) {
+  CognitienceWP.rightPanelVisible = !CognitienceWP.rightPanelVisible;
+  panel.classList.toggle('hidden', !CognitienceWP.rightPanelVisible);
+  if (CognitienceWP.rightPanelVisible) {
     renderOutline(document.getElementById('outline-tree'));
   }
 }
 
 function toggleFocusMode() {
-  CognitionWP.focusMode = !CognitionWP.focusMode;
-  document.body.classList.toggle('focus-mode', CognitionWP.focusMode);
+  CognitienceWP.focusMode = !CognitienceWP.focusMode;
+  document.body.classList.toggle('focus-mode', CognitienceWP.focusMode);
 }
 
 function changeFontSize(delta) {
-  let current = CognitionWP.config['editor.fontSize'] || 12;
+  let current = CognitienceWP.config['editor.fontSize'] || 12;
   current = Math.max(6, Math.min(120, current + delta));
-  CognitionWP.config['editor.fontSize'] = current;
-  window.cognition.config.set('editor.fontSize', current);
+  CognitienceWP.config['editor.fontSize'] = current;
+  window.cognitience.config.set('editor.fontSize', current);
   document.documentElement.style.setProperty('--editor-font-size', current + 'px');
   const input = document.getElementById('font-size-input');
   if (input) input.value = current;
@@ -1645,8 +1645,8 @@ function changeFontSize(delta) {
 
 function resetFontSize() {
   const defaultSize = 12;
-  CognitionWP.config['editor.fontSize'] = defaultSize;
-  window.cognition.config.set('editor.fontSize', defaultSize);
+  CognitienceWP.config['editor.fontSize'] = defaultSize;
+  window.cognitience.config.set('editor.fontSize', defaultSize);
   document.documentElement.style.setProperty('--editor-font-size', defaultSize + 'px');
   const input = document.getElementById('font-size-input');
   if (input) input.value = defaultSize;
@@ -1661,7 +1661,7 @@ function zoomEditor(direction, reset) {
 }
 
 function updateOutline() {
-  if (CognitionWP.rightPanelVisible) {
+  if (CognitienceWP.rightPanelVisible) {
     renderOutline(document.getElementById('outline-tree'));
   }
 }
@@ -1707,7 +1707,7 @@ async function showContextMenu(x, y) {
 
   // Get spellcheck suggestions for the word under the cursor
   let spellHtml = '';
-  if (CognitionWP.spellCheckEnabled) {
+  if (CognitienceWP.spellCheckEnabled) {
     const misspelled = await getMisspelledWordAtPoint(x, y);
     if (misspelled && misspelled.suggestions.length > 0) {
       spellHtml = '<div class="context-menu-spell-header">Suggestions</div>';
@@ -1803,8 +1803,8 @@ function setupStatusBar() {
   const spellEl = document.getElementById('status-spellcheck');
   if (spellEl) {
     spellEl.addEventListener('click', () => {
-      const newVal = !(CognitionWP.config['editor.spellcheck'] !== false);
-      window.cognition.config.set('editor.spellcheck', newVal);
+      const newVal = !(CognitienceWP.config['editor.spellcheck'] !== false);
+      window.cognitience.config.set('editor.spellcheck', newVal);
     });
   }
 }
@@ -1814,34 +1814,34 @@ function setupStatusBar() {
 // ═══════════════════════════════════════════════════════════
 
 function setupMenuListeners() {
-  window.cognition.on('doc:new', () => newDocument());
-  window.cognition.on('doc:open', () => openDocument());
-  window.cognition.on('doc:save', () => saveDocument());
-  window.cognition.on('doc:saveAs', () => saveAsDocument());
-  window.cognition.on('doc:export', (data) => exportDocument(data.format));
-  window.cognition.on('doc:print', () => window.print());
+  window.cognitience.on('doc:new', () => newDocument());
+  window.cognitience.on('doc:open', () => openDocument());
+  window.cognitience.on('doc:save', () => saveDocument());
+  window.cognitience.on('doc:saveAs', () => saveAsDocument());
+  window.cognitience.on('doc:export', (data) => exportDocument(data.format));
+  window.cognitience.on('doc:print', () => window.print());
 
-  window.cognition.on('insert:heading', (data) => {
+  window.cognitience.on('insert:heading', (data) => {
     document.execCommand('formatBlock', false, 'H' + data.level);
   });
-  window.cognition.on('insert:bold', () => executeFormatCommand('bold'));
-  window.cognition.on('insert:italic', () => executeFormatCommand('italic'));
-  window.cognition.on('insert:underline', () => executeFormatCommand('underline'));
-  window.cognition.on('insert:strikethrough', () => executeFormatCommand('strikethrough'));
-  window.cognition.on('insert:link', () => executeFormatCommand('createLink'));
-  window.cognition.on('insert:image', () => executeFormatCommand('insertImage'));
-  window.cognition.on('insert:table', () => insertTable());
-  window.cognition.on('insert:codeBlock', () => document.execCommand('formatBlock', false, 'PRE'));
-  window.cognition.on('insert:quote', () => document.execCommand('formatBlock', false, 'BLOCKQUOTE'));
-  window.cognition.on('insert:hr', () => document.execCommand('insertHorizontalRule'));
-  window.cognition.on('insert:template', (data) => insertTemplate(data.template));
-  window.cognition.on('insert:list', (data) => {
+  window.cognitience.on('insert:bold', () => executeFormatCommand('bold'));
+  window.cognitience.on('insert:italic', () => executeFormatCommand('italic'));
+  window.cognitience.on('insert:underline', () => executeFormatCommand('underline'));
+  window.cognitience.on('insert:strikethrough', () => executeFormatCommand('strikethrough'));
+  window.cognitience.on('insert:link', () => executeFormatCommand('createLink'));
+  window.cognitience.on('insert:image', () => executeFormatCommand('insertImage'));
+  window.cognitience.on('insert:table', () => insertTable());
+  window.cognitience.on('insert:codeBlock', () => document.execCommand('formatBlock', false, 'PRE'));
+  window.cognitience.on('insert:quote', () => document.execCommand('formatBlock', false, 'BLOCKQUOTE'));
+  window.cognitience.on('insert:hr', () => document.execCommand('insertHorizontalRule'));
+  window.cognitience.on('insert:template', (data) => insertTemplate(data.template));
+  window.cognitience.on('insert:list', (data) => {
     if (data.type === 'bullet') document.execCommand('insertUnorderedList');
     else if (data.type === 'numbered') document.execCommand('insertOrderedList');
     else if (data.type === 'checklist') toggleChecklistItem();
   });
 
-  window.cognition.on('format:align', (data) => {
+  window.cognitience.on('format:align', (data) => {
     switch (data.align) {
       case 'left': document.execCommand('justifyLeft'); break;
       case 'center': document.execCommand('justifyCenter'); break;
@@ -1849,43 +1849,43 @@ function setupMenuListeners() {
       case 'justify': document.execCommand('justifyFull'); break;
     }
   });
-  window.cognition.on('format:subscript', () => executeFormatCommand('subscript'));
-  window.cognition.on('format:superscript', () => executeFormatCommand('superscript'));
-  window.cognition.on('format:highlight', () => document.execCommand('hiliteColor', false, '#f9e79f'));
-  window.cognition.on('format:clear', () => executeFormatCommand('removeFormat'));
+  window.cognitience.on('format:subscript', () => executeFormatCommand('subscript'));
+  window.cognitience.on('format:superscript', () => executeFormatCommand('superscript'));
+  window.cognitience.on('format:highlight', () => document.execCommand('hiliteColor', false, '#f9e79f'));
+  window.cognitience.on('format:clear', () => executeFormatCommand('removeFormat'));
 
-  window.cognition.on('view:toggleSidebar', () => toggleSidebar());
-  window.cognition.on('view:toggleOutline', () => toggleRightPanel());
-  window.cognition.on('view:toggleFocusMode', () => toggleFocusMode());
-  window.cognition.on('view:toggleFullscreen', () => window.cognition.window.fullscreen());
-  window.cognition.on('view:zoomIn', () => zoomEditor(1));
-  window.cognition.on('view:zoomOut', () => zoomEditor(-1));
-  window.cognition.on('view:zoomReset', () => zoomEditor(0, true));
-  window.cognition.on('view:commandPalette', () => openCommandPalette());
+  window.cognitience.on('view:toggleSidebar', () => toggleSidebar());
+  window.cognitience.on('view:toggleOutline', () => toggleRightPanel());
+  window.cognitience.on('view:toggleFocusMode', () => toggleFocusMode());
+  window.cognitience.on('view:toggleFullscreen', () => window.cognitience.window.fullscreen());
+  window.cognitience.on('view:zoomIn', () => zoomEditor(1));
+  window.cognitience.on('view:zoomOut', () => zoomEditor(-1));
+  window.cognitience.on('view:zoomReset', () => zoomEditor(0, true));
+  window.cognitience.on('view:commandPalette', () => openCommandPalette());
 
-  window.cognition.on('editor:find', () => toggleFindReplace());
-  window.cognition.on('editor:replace', () => toggleFindReplace(true));
-  window.cognition.on('editor:findNext', () => findNextMatch());
-  window.cognition.on('editor:findPrev', () => findNextMatch(true));
+  window.cognitience.on('editor:find', () => toggleFindReplace());
+  window.cognitience.on('editor:replace', () => toggleFindReplace(true));
+  window.cognitience.on('editor:findNext', () => findNextMatch());
+  window.cognitience.on('editor:findPrev', () => findNextMatch(true));
 
-  window.cognition.on('tools:wordCount', () => showWordCountDialog());
-  window.cognition.on('tools:settings', () => showSidebarView('settings'));
+  window.cognitience.on('tools:wordCount', () => showWordCountDialog());
+  window.cognitience.on('tools:settings', () => showSidebarView('settings'));
 
-  window.cognition.on('ext:browse', () => showSidebarView('extensions'));
-  window.cognition.on('ext:manage', () => showSidebarView('extensions'));
-  window.cognition.on('ext:reloadAll', () => reloadAllExtensions());
-  window.cognition.on('ext:createNew', async () => {
-    const result = await window.cognition.extensions.scaffoldPlugin();
+  window.cognitience.on('ext:browse', () => showSidebarView('extensions'));
+  window.cognitience.on('ext:manage', () => showSidebarView('extensions'));
+  window.cognitience.on('ext:reloadAll', () => reloadAllExtensions());
+  window.cognitience.on('ext:createNew', async () => {
+    const result = await window.cognitience.extensions.scaffoldPlugin();
     if (result && result.success) {
       showNotification('success', 'Plugin Created', `Plugin scaffolded at: ${result.path}`);
     } else if (result && result.error) {
       showNotification('error', 'Plugin Creation Failed', result.error);
     }
   });
-  window.cognition.on('ext:docs', () => showSidebarView('docs'));
+  window.cognitience.on('ext:docs', () => showSidebarView('docs'));
 
   // Toolbar button injection from extensions
-  window.cognition.on('toolbar:addButton', (data) => {
+  window.cognitience.on('toolbar:addButton', (data) => {
     const toolbar = document.getElementById('ext-toolbar-buttons');
     if (!toolbar) return;
     // Remove existing button with same ID
@@ -1898,27 +1898,27 @@ function setupMenuListeners() {
     btn.title = data.tooltip || data.label || '';
     btn.innerHTML = data.svg || '';
     btn.addEventListener('click', () => {
-      window.cognition.extensions.executeCommand(data.command).catch(err => {
+      window.cognitience.extensions.executeCommand(data.command).catch(err => {
         showNotification('error', 'Extension Error', err.message);
       });
     });
     toolbar.appendChild(btn);
   });
-  window.cognition.on('toolbar:removeButton', (data) => {
+  window.cognitience.on('toolbar:removeButton', (data) => {
     const toolbar = document.getElementById('ext-toolbar-buttons');
     if (!toolbar) return;
     const btn = toolbar.querySelector(`[data-ext-button="${data.id}"]`);
     if (btn) btn.remove();
   });
 
-  window.cognition.on('help:shortcuts', () => showShortcutsHelp());
-  window.cognition.on('help:checkUpdates', () => checkForUpdates());
+  window.cognitience.on('help:shortcuts', () => showShortcutsHelp());
+  window.cognitience.on('help:checkUpdates', () => checkForUpdates());
 
-  window.cognition.on('notification:info', (msg) => showNotification('info', 'Info', msg));
-  window.cognition.on('notification:warning', (msg) => showNotification('warning', 'Warning', msg));
-  window.cognition.on('notification:error', (msg) => showNotification('error', 'Error', msg));
+  window.cognitience.on('notification:info', (msg) => showNotification('info', 'Info', msg));
+  window.cognitience.on('notification:warning', (msg) => showNotification('warning', 'Warning', msg));
+  window.cognitience.on('notification:error', (msg) => showNotification('error', 'Error', msg));
 
-  window.cognition.documents.onOpen((filePath) => openDocument(filePath));
+  window.cognitience.documents.onOpen((filePath) => openDocument(filePath));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1926,45 +1926,45 @@ function setupMenuListeners() {
 // ═══════════════════════════════════════════════════════════
 
 function setupExtensionListeners() {
-  window.cognition.extensions.onInstallRequest((path) => {
+  window.cognitience.extensions.onInstallRequest((path) => {
     showNotification('info', 'Installing', 'Installing extension…');
   });
 }
 
 async function toggleExtension(id) {
-  const ext = CognitionWP.extensions.find(e => e.id === id);
+  const ext = CognitienceWP.extensions.find(e => e.id === id);
   if (!ext) return;
   if (ext.state === 'active') {
-    await window.cognition.extensions.disable(id);
+    await window.cognitience.extensions.disable(id);
     showNotification('info', 'Disabled', ext.manifest.displayName);
   } else {
-    await window.cognition.extensions.enable(id);
+    await window.cognitience.extensions.enable(id);
     showNotification('info', 'Enabled', ext.manifest.displayName);
   }
-  CognitionWP.extensions = await window.cognition.extensions.list();
+  CognitienceWP.extensions = await window.cognitience.extensions.list();
   showSidebarView('extensions');
 }
 
 async function reloadExtension(id) {
-  await window.cognition.extensions.reload(id);
+  await window.cognitience.extensions.reload(id);
   showNotification('info', 'Reloaded', 'Extension reloaded');
-  CognitionWP.extensions = await window.cognition.extensions.list();
+  CognitienceWP.extensions = await window.cognitience.extensions.list();
 }
 
 async function uninstallExtension(id) {
   if (!confirm('Uninstall this extension?')) return;
-  await window.cognition.extensions.uninstall(id);
+  await window.cognitience.extensions.uninstall(id);
   showNotification('info', 'Uninstalled', 'Extension removed');
-  CognitionWP.extensions = await window.cognition.extensions.list();
+  CognitienceWP.extensions = await window.cognitience.extensions.list();
   showSidebarView('extensions');
 }
 
 async function reloadAllExtensions() {
-  for (const ext of CognitionWP.extensions) {
-    await window.cognition.extensions.reload(ext.id);
+  for (const ext of CognitienceWP.extensions) {
+    await window.cognitience.extensions.reload(ext.id);
   }
   showNotification('info', 'Extensions', 'All extensions reloaded');
-  CognitionWP.extensions = await window.cognition.extensions.list();
+  CognitienceWP.extensions = await window.cognitience.extensions.list();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1975,7 +1975,7 @@ function renderPluginDocs(container) {
   container.innerHTML = `
     <div style="padding:8px 12px;font-size:13px;line-height:1.6;color:var(--fg-menu);">
       <h3 style="margin:0 0 8px;font-size:14px;">Plugin Development Guide</h3>
-      <p style="margin:0 0 8px;color:var(--fg-tab);">Cognition WP plugins use the <code>.cogwp</code> format.</p>
+      <p style="margin:0 0 8px;color:var(--fg-tab);">Cognitience WP plugins use the <code>.cogwp</code> format.</p>
       <div style="margin-bottom:12px;">
         <strong style="font-size:12px;display:block;margin-bottom:4px;">Quick Start</strong>
         <ol style="margin:0;padding-left:20px;">
@@ -2033,8 +2033,8 @@ function showPluginDocs(topic) {
     overview: {
       title: 'Plugin Documentation — Overview',
       body: `
-        <h2>Cognition WP Extension System</h2>
-        <p>Cognition WP supports a VS Code-inspired extension system. Extensions can add commands, interact with the editor, show notifications, create status bar items, and respond to document lifecycle events.</p>
+        <h2>Cognitience WP Extension System</h2>
+        <p>Cognitience WP supports a VS Code-inspired extension system. Extensions can add commands, interact with the editor, show notifications, create status bar items, and respond to document lifecycle events.</p>
         <h3>Quick Start</h3>
         <ol>
           <li>Create a folder with a <code>package.json</code> manifest and a <code>main.js</code> entry file</li>
@@ -2053,7 +2053,7 @@ function showPluginDocs(topic) {
           <li><strong>Publishing & Distribution</strong> — packaging and sharing</li>
           <li><strong>Example Extension</strong> — complete working example</li>
         </ul>
-        <p>Extensions are stored in: <code>AppData/Roaming/cognition-wp/extensions/</code></p>
+        <p>Extensions are stored in: <code>AppData/Roaming/cognitience-wp/extensions/</code></p>
       `,
     },
     create: {
@@ -2112,7 +2112,7 @@ module.exports = { activate, deactivate };</pre>
         </table>
         <h3>Activation Events</h3>
         <ul>
-          <li><code>"onStartup"</code> — activates when Cognition WP starts</li>
+          <li><code>"onStartup"</code> — activates when Cognitience WP starts</li>
           <li><code>"*"</code> — activates immediately (use sparingly)</li>
         </ul>
       `,
@@ -2230,15 +2230,15 @@ module.exports = { activate, deactivate };</pre>
 ├── package.json
 ├── main.js
 └── icon.png</pre>
-        <p>Rename the .zip to .cogx for Cognition Extension format.</p>
+        <p>Rename the .zip to .cogx for Cognitience Extension format.</p>
         <h3>Installation Methods</h3>
         <ol>
           <li><strong>VSIX Install:</strong> Extensions → Install from VSIX → select .cogx or .zip file</li>
-          <li><strong>Manual Install:</strong> Copy the extension folder to <code>AppData/Roaming/cognition-wp/extensions/</code></li>
-          <li><strong>Gallery (coming soon):</strong> Publish to the Cognition Extension Registry</li>
+          <li><strong>Manual Install:</strong> Copy the extension folder to <code>AppData/Roaming/cognitience-wp/extensions/</code></li>
+          <li><strong>Gallery (coming soon):</strong> Publish to the Cognitience Extension Registry</li>
         </ol>
         <h3>Extension Directory</h3>
-        <p>Extensions are stored at: <code>C:\\Users\\[user]\\AppData\\Roaming\\cognition-wp\\extensions\\</code></p>
+        <p>Extensions are stored at: <code>C:\\Users\\[user]\\AppData\\Roaming\\cognitience-wp\\extensions\\</code></p>
         <p>Each extension gets its own subfolder named <code>publisher.name</code>.</p>
       `,
     },
@@ -2250,7 +2250,7 @@ module.exports = { activate, deactivate };</pre>
         <pre>{
   "name": "word-counter",
   "displayName": "Word Counter",
-  "publisher": "cognition",
+  "publisher": "cognitience",
   "version": "1.0.0",
   "description": "Shows live word count in status bar",
   "main": "main.js",
@@ -2318,11 +2318,11 @@ module.exports = { activate, deactivate };</pre>
 // ═══════════════════════════════════════════════════════════
 
 function showWordCountDialog() {
-  const text = CognitionWP.editor.innerText;
+  const text = CognitienceWP.editor.innerText;
   const words = text.trim().split(/\s+/).filter(w => w.length > 0);
   const chars = text.length;
   const charsNoSpaces = text.replace(/\s/g, '').length;
-  const paragraphs = CognitionWP.editor.querySelectorAll('p').length;
+  const paragraphs = CognitienceWP.editor.querySelectorAll('p').length;
   const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
   const readingTime = Math.max(1, Math.ceil(words.length / 200));
 
@@ -2331,8 +2331,8 @@ function showWordCountDialog() {
 }
 
 function showAboutDialog() {
-  showNotification('info', 'About Cognition WP',
-    'Version 1.0.0 · The VS Code of word processors · MIT License · Maq-Swarm');
+  showNotification('info', 'About Cognitience WP',
+    'Version 1.0.0 · The VS Code of word processors · MIT License · wailonbrowngh');
 }
 
 function showShortcutsHelp() {
@@ -2370,7 +2370,7 @@ function showShortcutsHelp() {
 // ═══════════════════════════════════════════════════════════
 
 function insertTemplate(templateKey) {
-  const templates = window.COGNITION_TEMPLATES || {};
+  const templates = window.COGNITIENCE_TEMPLATES || {};
   const template = templates[templateKey];
   if (!template) {
     showNotification('error', 'Template Not Found', `Template "${templateKey}" does not exist.`);
@@ -2385,17 +2385,17 @@ function insertTemplate(templateKey) {
   }
 
   // Confirm replacing current content
-  if (CognitionWP.isDirty || CognitionWP.editor.innerText.trim().length > 0) {
+  if (CognitienceWP.isDirty || CognitienceWP.editor.innerText.trim().length > 0) {
     if (!confirm(`Insert the "${template.name}" template? This will replace your current document content.`)) {
       return;
     }
   }
 
-  CognitionWP.editor.innerHTML = template.insert();
+  CognitienceWP.editor.innerHTML = template.insert();
   markDirty();
   updateWordCount();
   updateOutline();
-  CognitionWP.editor.focus();
+  CognitienceWP.editor.focus();
   showNotification('success', 'Template Inserted', `"${template.name}" template loaded.`);
 }
 
@@ -2406,22 +2406,22 @@ function insertTemplate(templateKey) {
 function initSpellChecker() {
   // Native Hunspell is built into Electron — no JS dictionary needed.
   // Just run an initial check if spellcheck is enabled.
-  console.log('[Cognition WP] Native Hunspell spellcheck ready');
-  if (CognitionWP.spellCheckEnabled) {
+  console.log('[Cognitience WP] Native Hunspell spellcheck ready');
+  if (CognitienceWP.spellCheckEnabled) {
     runSpellCheck();
   }
 }
 
 function scheduleSpellCheck() {
-  if (!CognitionWP.spellCheckEnabled) return;
-  clearTimeout(CognitionWP.spellCheckTimer);
-  CognitionWP.spellCheckTimer = setTimeout(runSpellCheck, CognitionWP.spellCheckDelay);
+  if (!CognitienceWP.spellCheckEnabled) return;
+  clearTimeout(CognitienceWP.spellCheckTimer);
+  CognitienceWP.spellCheckTimer = setTimeout(runSpellCheck, CognitienceWP.spellCheckDelay);
 }
 
 async function runSpellCheck() {
-  if (!CognitionWP.spellCheckEnabled) return;
+  if (!CognitienceWP.spellCheckEnabled) return;
 
-  const editor = CognitionWP.editor;
+  const editor = CognitienceWP.editor;
   const text = editor.innerText;
 
   // Save selection to restore after DOM manipulation
@@ -2436,14 +2436,14 @@ async function runSpellCheck() {
 
   // Get misspelled words from native Hunspell via IPC
   try {
-    const errors = await window.cognition.spell.checkText(text);
+    const errors = await window.cognitience.spell.checkText(text);
     if (errors && errors.length > 0) {
       for (const error of errors) {
         highlightMisspelledWord(error.word, error.start);
       }
     }
   } catch (e) {
-    console.warn('[Cognition WP] Spellcheck failed', e);
+    console.warn('[Cognitience WP] Spellcheck failed', e);
   }
 
   // Restore selection
@@ -2458,7 +2458,7 @@ async function runSpellCheck() {
 }
 
 function clearSpellCheckHighlights() {
-  const editor = CognitionWP.editor;
+  const editor = CognitienceWP.editor;
   if (!editor) return;
 
   // Find all misspelled spans and unwrap them
@@ -2474,7 +2474,7 @@ function clearSpellCheckHighlights() {
 }
 
 function highlightMisspelledWord(word, textPosition) {
-  const editor = CognitionWP.editor;
+  const editor = CognitienceWP.editor;
   if (!editor) return;
 
   // Walk text nodes to find the word
@@ -2519,10 +2519,10 @@ async function getMisspelledWordAtPoint(x, y) {
       // Get suggestions from native Hunspell
       let suggestions = [];
       try {
-        const result = await window.cognition.spell.check(word);
+        const result = await window.cognitience.spell.check(word);
         suggestions = (result.suggestions || []).map(s => ({ word: s }));
       } catch (e) {}
-      const editorText = CognitionWP.editor.innerText;
+      const editorText = CognitienceWP.editor.innerText;
       const start = editorText.indexOf(target.textContent);
       return {
         word: target.textContent,
@@ -2549,12 +2549,12 @@ async function getMisspelledWordAtPoint(x, y) {
         let isMisspelled = false;
         let suggestions = [];
         try {
-          const result = await window.cognition.spell.check(wordMatch.toLowerCase());
+          const result = await window.cognitience.spell.check(wordMatch.toLowerCase());
           isMisspelled = !result.correct;
           suggestions = (result.suggestions || []).map(s => ({ word: s }));
         } catch (e) {}
         if (isMisspelled) {
-          const fullText = CognitionWP.editor.innerText;
+          const fullText = CognitienceWP.editor.innerText;
           const start = fullText.indexOf(wordMatch);
           return {
             word: wordMatch,
@@ -2571,7 +2571,7 @@ async function getMisspelledWordAtPoint(x, y) {
 }
 
 function applySpellingFix(newWord, start, end) {
-  const editor = CognitionWP.editor;
+  const editor = CognitienceWP.editor;
   const text = editor.innerText;
 
   // Find the misspelled span and replace its text
@@ -2599,17 +2599,17 @@ async function addWordToDictionary(word) {
 
   // Add to native Hunspell dictionary via IPC
   try {
-    await window.cognition.spell.addWord(word);
+    await window.cognitience.spell.addWord(word);
   } catch (e) {
-    console.warn('[Cognition WP] Could not add word to dictionary', e);
+    console.warn('[Cognitience WP] Could not add word to dictionary', e);
   }
 
   // Also save in config for persistence
-  const customWords = CognitionWP.config['editor.customDictionary'] || [];
+  const customWords = CognitienceWP.config['editor.customDictionary'] || [];
   if (!customWords.includes(word)) {
     customWords.push(word);
-    window.cognition.config.set('editor.customDictionary', customWords);
-    CognitionWP.config['editor.customDictionary'] = customWords;
+    window.cognitience.config.set('editor.customDictionary', customWords);
+    CognitienceWP.config['editor.customDictionary'] = customWords;
   }
 
   showNotification('success', 'Dictionary', `Added "${word}" to dictionary`);

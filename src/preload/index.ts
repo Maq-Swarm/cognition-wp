@@ -1,5 +1,5 @@
 /**
- * Cognition WP — Preload Script
+ * Cognitience WP — Preload Script
  * Secure bridge between renderer and main process.
  * Exposes a controlled API via contextBridge.
  */
@@ -148,4 +148,4 @@ const cognitionAPI = {
 };
 
 // Expose the API to the renderer
-contextBridge.exposeInMainWorld('cognition', cognitionAPI);
+contextBridge.exposeInMainWorld('cognitience', cognitionAPI);

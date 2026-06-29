@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   Cognition WP — Layout
+   Cognitience WP — Layout
    Word processor layout: title bar, toolbar, document, status bar.
    ═══════════════════════════════════════════════════════ */
 
@@ -497,17 +497,17 @@ html, body {
   margin: 0 auto;
 }
 
-[data-theme="cognition-dark"] #editor-page {
+[data-theme="cognitience-dark"] #editor-page {
   background: #2a2a3a;
   box-shadow: 0 2px 10px rgba(0,0,0,0.4);
 }
 
-[data-theme="cognition-sepia"] #editor-page {
+[data-theme="cognitience-sepia"] #editor-page {
   background: #f4ecd8;
   box-shadow: 0 2px 10px rgba(91,70,54,0.2);
 }
 
-[data-theme="cognition-contrast-dark"] #editor-page {
+[data-theme="cognitience-contrast-dark"] #editor-page {
   background: #0a0a0a;
   box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }

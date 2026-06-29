@@ -1,16 +1,16 @@
-# Cognition WP
+# Cognitience WP
 
 **The VS Code of word processors.**
 
-An open-source, extensible word processor built on Electron and TypeScript. Cognition WP brings the power and flexibility of VS Code's extension ecosystem to the world of document editing.
+An open-source, extensible word processor built on Electron and TypeScript. Cognitience WP brings the power and flexibility of VS Code's extension ecosystem to the world of document editing.
 
-![Cognition WP](resources/logo.png)
+![Cognitience WP](resources/logo.png)
 
 ## Download & Install
 
-Download from the [releases page](https://github.com/Maq-Swarm/cognition-wp/releases):
-- `Cognition WP Setup 1.1.0.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
-- `Cognition-WP-Portable-1.1.0.exe` — Single portable EXE (no install needed, just run)
+Download from the [releases page](https://github.com/wailonbrowngh/cognitience-wp/releases):
+- `Cognitience WP Setup 1.1.0.exe` — One-click NSIS installer (desktop + Start Menu shortcuts)
+- `Cognitience-WP-Portable-1.1.0.exe` — Single portable EXE (no install needed, just run)
 
 ## Features
 
@@ -35,7 +35,7 @@ Download from the [releases page](https://github.com/Maq-Swarm/cognition-wp/rele
 Access via Insert → Templates, or the Command Palette.
 
 ### Export Formats
-- `.cog` — Cognition WP native format (v3.0.0: Markdown body + YAML frontmatter, human & AI readable)
+- `.cog` — Cognitience WP native format (v3.0.0: Markdown body + YAML frontmatter, human & AI readable)
 - `.md` — Markdown (headings, lists, tables, code blocks, links, images, checklists)
 - `.txt` — Plain text
 - `.html` — Standalone HTML with embedded CSS
@@ -115,10 +115,10 @@ See [Extension API Guide](docs/extension-api.md).
 4. Install via **Extensions → Install from .cogwp...**
 
 Or manually:
-1. Create a directory in `%APPDATA%/cognition-wp/extensions/my-extension/`
+1. Create a directory in `%APPDATA%/cognitience-wp/extensions/my-extension/`
 2. Add a `package.json` with manifest
 3. Create `main.js` with `exports.activate = function(ctx) { ... }`
-4. Restart Cognition WP
+4. Restart Cognitience WP
 
 ## Architecture
 
@@ -129,4 +129,4 @@ Or manually:
 
 ## License
 
-MIT — © Maq-Swarm
+MIT — © wailonbrowngh

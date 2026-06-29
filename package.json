@@ -108,7 +108,10 @@
       "artifactName": "Cognition-WP-Portable-${version}.exe"
     },
     "linux": {
-      "target": "AppImage",
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
       "icon": "resources/icon.png",
       "category": "Office"
     }

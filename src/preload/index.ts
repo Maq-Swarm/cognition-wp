@@ -130,6 +130,13 @@ const cognitionAPI = {
     check: () => ipcRenderer.invoke('updates:check'),
     downloadAndInstall: (url: string) => ipcRenderer.invoke('updates:downloadAndInstall', url),
   },
+
+  // ─── Spellcheck (native Hunspell) ──────────────────────────
+  spell: {
+    check: (word: string) => ipcRenderer.invoke('spell:check', word),
+    addWord: (word: string) => ipcRenderer.invoke('spell:addWord', word),
+    checkText: (text: string) => ipcRenderer.invoke('spell:checkText', text),
+  },
 };
 
 // Expose the API to the renderer

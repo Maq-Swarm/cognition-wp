@@ -13,7 +13,7 @@ export const EXTENSIONS_DIR = 'extensions';
 export const CONFIG_FILE = 'cognition-wp-config.json';
 
 export const DEFAULT_CONFIG: Record<string, unknown> = {
-  'editor.fontSize': 16,
+  'editor.fontSize': 12,
   'editor.fontFamily': "'Segoe UI', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif",
   'editor.lineHeight': 1.6,
   'editor.tabSize': 4,

@@ -139,8 +139,8 @@ function applyConfigToEditor() {
   const spellcheck = cfg['editor.spellcheck'];
   CognitionWP.spellCheckEnabled = spellcheck !== false;
   if (CognitionWP.editor) {
-    // Disable native browser spellcheck — we use our own SymSpell-based one
-    CognitionWP.editor.spellcheck = false;
+    // Enable native Hunspell spellcheck built into Electron
+    CognitionWP.editor.spellcheck = CognitionWP.spellCheckEnabled;
     CognitionWP.editor.setAttribute('data-spellcheck', String(CognitionWP.spellCheckEnabled));
   }
   const spellStatus = document.getElementById('status-spellcheck');
@@ -148,12 +148,10 @@ function applyConfigToEditor() {
     spellStatus.textContent = 'Spell Check: ' + (CognitionWP.spellCheckEnabled ? 'ON' : 'OFF');
   }
   // Re-run spellcheck immediately when toggled
-  if (CognitionWP.spellChecker) {
-    if (CognitionWP.spellCheckEnabled) {
-      runSpellCheck();
-    } else {
-      clearSpellCheckHighlights();
-    }
+  if (CognitionWP.spellCheckEnabled) {
+    runSpellCheck();
+  } else {
+    clearSpellCheckHighlights();
   }
 }
 
@@ -1087,6 +1085,21 @@ function setupKeyboardShortcuts() {
       e.preventDefault();
       toggleFindReplace(true);
     }
+    // Ctrl+= (Ctrl++): Increase font size by 1px
+    if (ctrl && !e.shiftKey && (e.key === '=' || e.key === '+')) {
+      e.preventDefault();
+      changeFontSize(1);
+    }
+    // Ctrl+-: Decrease font size by 1px
+    if (ctrl && !e.shiftKey && e.key === '-') {
+      e.preventDefault();
+      changeFontSize(-1);
+    }
+    // Ctrl+0: Reset font size to default
+    if (ctrl && !e.shiftKey && e.key === '0') {
+      e.preventDefault();
+      resetFontSize();
+    }
     // Escape: Close overlays
     if (e.key === 'Escape') {
       closeCommandPalette();
@@ -1620,13 +1633,31 @@ function toggleFocusMode() {
   document.body.classList.toggle('focus-mode', CognitionWP.focusMode);
 }
 
+function changeFontSize(delta) {
+  let current = CognitionWP.config['editor.fontSize'] || 12;
+  current = Math.max(6, Math.min(120, current + delta));
+  CognitionWP.config['editor.fontSize'] = current;
+  window.cognition.config.set('editor.fontSize', current);
+  document.documentElement.style.setProperty('--editor-font-size', current + 'px');
+  const input = document.getElementById('font-size-input');
+  if (input) input.value = current;
+}
+
+function resetFontSize() {
+  const defaultSize = 12;
+  CognitionWP.config['editor.fontSize'] = defaultSize;
+  window.cognition.config.set('editor.fontSize', defaultSize);
+  document.documentElement.style.setProperty('--editor-font-size', defaultSize + 'px');
+  const input = document.getElementById('font-size-input');
+  if (input) input.value = defaultSize;
+}
+
 function zoomEditor(direction, reset) {
   if (reset) {
-    CognitionWP.zoomLevel = 0;
+    resetFontSize();
   } else {
-    CognitionWP.zoomLevel += direction * 0.1;
+    changeFontSize(direction);
   }
-  document.body.style.zoom = String(1 + CognitionWP.zoomLevel);
 }
 
 function updateOutline() {
@@ -1664,7 +1695,7 @@ function showNotification(type, title, message) {
 
 let contextMenuEl = null;
 
-function showContextMenu(x, y) {
+async function showContextMenu(x, y) {
   closeContextMenu();
   contextMenuEl = document.createElement('div');
   contextMenuEl.className = 'context-menu';
@@ -1676,8 +1707,8 @@ function showContextMenu(x, y) {
 
   // Get spellcheck suggestions for the word under the cursor
   let spellHtml = '';
-  if (CognitionWP.spellCheckEnabled && CognitionWP.spellChecker) {
-    const misspelled = getMisspelledWordAtPoint(x, y);
+  if (CognitionWP.spellCheckEnabled) {
+    const misspelled = await getMisspelledWordAtPoint(x, y);
     if (misspelled && misspelled.suggestions.length > 0) {
       spellHtml = '<div class="context-menu-spell-header">Suggestions</div>';
       for (const s of misspelled.suggestions.slice(0, 5)) {
@@ -2323,6 +2354,9 @@ function showShortcutsHelp() {
     'Ctrl+Shift+F: Focus Mode',
     'Ctrl+Shift+O: Toggle Outline',
     'Ctrl+,: Settings',
+    'Ctrl++: Increase Font Size',
+    'Ctrl+-: Decrease Font Size',
+    'Ctrl+0: Reset Font Size',
     'F11: Full Screen',
     'Ctrl+/: Show Shortcuts',
   ];
@@ -2366,53 +2400,29 @@ function insertTemplate(templateKey) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SPELLCHECK (SymSpell-based)
+// SPELLCHECK (native Hunspell via Electron)
 // ═══════════════════════════════════════════════════════════
 
 function initSpellChecker() {
-  if (typeof SymSpell === 'undefined') {
-    console.warn('[Cognition WP] SymSpell not loaded — spellcheck disabled');
-    return;
-  }
-
-  CognitionWP.spellChecker = new SymSpell(2);
-  CognitionWP.spellChecker.loadDefault();
-
-  // Load custom words from config
-  try {
-    const customWords = CognitionWP.config['editor.customDictionary'] || [];
-    if (Array.isArray(customWords)) {
-      for (const word of customWords) {
-        CognitionWP.spellChecker.addCustomWord(word);
-      }
-    }
-  } catch (e) {
-    console.warn('[Cognition WP] Could not load custom dictionary', e);
-  }
-
-  const stats = CognitionWP.spellChecker.getStats();
-  console.log(`[Cognition WP] Spellchecker loaded: ${stats.wordCount} words, ${stats.customWordCount} custom`);
-
-  // Run initial spellcheck
+  // Native Hunspell is built into Electron — no JS dictionary needed.
+  // Just run an initial check if spellcheck is enabled.
+  console.log('[Cognition WP] Native Hunspell spellcheck ready');
   if (CognitionWP.spellCheckEnabled) {
     runSpellCheck();
   }
 }
 
 function scheduleSpellCheck() {
-  if (!CognitionWP.spellCheckEnabled || !CognitionWP.spellChecker) return;
+  if (!CognitionWP.spellCheckEnabled) return;
   clearTimeout(CognitionWP.spellCheckTimer);
   CognitionWP.spellCheckTimer = setTimeout(runSpellCheck, CognitionWP.spellCheckDelay);
 }
 
-function runSpellCheck() {
-  if (!CognitionWP.spellChecker || !CognitionWP.spellCheckEnabled) return;
+async function runSpellCheck() {
+  if (!CognitionWP.spellCheckEnabled) return;
 
   const editor = CognitionWP.editor;
   const text = editor.innerText;
-
-  // Get all errors
-  const errors = CognitionWP.spellChecker.checkText(text);
 
   // Save selection to restore after DOM manipulation
   const selection = window.getSelection();
@@ -2424,10 +2434,16 @@ function runSpellCheck() {
   // Clear previous highlights
   clearSpellCheckHighlights();
 
-  // Highlight misspelled words by wrapping them in <span class="cog-misspelled">
-  // We do this by walking the text nodes of the editor
-  for (const error of errors) {
-    highlightMisspelledWord(error.word, error.start);
+  // Get misspelled words from native Hunspell via IPC
+  try {
+    const errors = await window.cognition.spell.checkText(text);
+    if (errors && errors.length > 0) {
+      for (const error of errors) {
+        highlightMisspelledWord(error.word, error.start);
+      }
+    }
+  } catch (e) {
+    console.warn('[Cognition WP] Spellcheck failed', e);
   }
 
   // Restore selection
@@ -2490,20 +2506,22 @@ function highlightMisspelledWord(word, textPosition) {
   }
 }
 
-function getMisspelledWordAtPoint(x, y) {
-  if (!CognitionWP.spellChecker) return null;
-
+async function getMisspelledWordAtPoint(x, y) {
   // Find the element at the click point
   const el = document.elementFromPoint(x, y);
   if (!el) return null;
 
-  // Check if we clicked on a misspelled word
+  // Check if we clicked on a misspelled word (already highlighted)
   let target = el;
   while (target && target !== document.body) {
     if (target.classList && target.classList.contains('cog-misspelled')) {
       const word = target.dataset.word || target.textContent || '';
-      const suggestions = CognitionWP.spellChecker.suggest(word, 5);
-      // Get the position of this word in the full text
+      // Get suggestions from native Hunspell
+      let suggestions = [];
+      try {
+        const result = await window.cognition.spell.check(word);
+        suggestions = (result.suggestions || []).map(s => ({ word: s }));
+      } catch (e) {}
       const editorText = CognitionWP.editor.innerText;
       const start = editorText.indexOf(target.textContent);
       return {
@@ -2522,22 +2540,29 @@ function getMisspelledWordAtPoint(x, y) {
     const range = sel.getRangeAt(0);
     const container = range.startContainer;
     if (container.nodeType === Node.TEXT_NODE) {
-      // Extract the word at cursor
       const text = container.textContent;
       const offset = range.startOffset;
       const before = text.substring(0, offset);
       const after = text.substring(offset);
       const wordMatch = (before.match(/([a-zA-Z']+)$/) || [''])[0] + (after.match(/^([a-zA-Z']+)/) || [''])[0];
-      if (wordMatch.length > 1 && !CognitionWP.spellChecker.isCorrect(wordMatch.toLowerCase())) {
-        const suggestions = CognitionWP.spellChecker.suggest(wordMatch.toLowerCase(), 5);
-        const fullText = CognitionWP.editor.innerText;
-        const start = fullText.indexOf(wordMatch);
-        return {
-          word: wordMatch,
-          start: start,
-          end: start + wordMatch.length,
-          suggestions: suggestions,
-        };
+      if (wordMatch.length > 1) {
+        let isMisspelled = false;
+        let suggestions = [];
+        try {
+          const result = await window.cognition.spell.check(wordMatch.toLowerCase());
+          isMisspelled = !result.correct;
+          suggestions = (result.suggestions || []).map(s => ({ word: s }));
+        } catch (e) {}
+        if (isMisspelled) {
+          const fullText = CognitionWP.editor.innerText;
+          const start = fullText.indexOf(wordMatch);
+          return {
+            word: wordMatch,
+            start: start,
+            end: start + wordMatch.length,
+            suggestions: suggestions,
+          };
+        }
       }
     }
   }
@@ -2550,8 +2575,6 @@ function applySpellingFix(newWord, start, end) {
   const text = editor.innerText;
 
   // Find the misspelled span and replace its text
-  const span = editor.querySelector(`span.cog-misspelled[data-word]`);
-  // More reliable: find the span containing the word at the right position
   const spans = editor.querySelectorAll('span.cog-misspelled');
   for (const s of spans) {
     const wordText = s.textContent;
@@ -2560,27 +2583,28 @@ function applySpellingFix(newWord, start, end) {
       s.textContent = newWord;
       s.classList.remove('cog-misspelled');
       markDirty();
-      // Re-run spellcheck after fix
       setTimeout(runSpellCheck, 100);
       return;
     }
   }
 
-  // Fallback: use execCommand
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  // Try to select and replace
   showNotification('info', 'Spell Check', `Applied: ${newWord}`);
   setTimeout(runSpellCheck, 100);
 }
 
-function addWordToDictionary(word) {
-  if (!CognitionWP.spellChecker || !word) return;
+async function addWordToDictionary(word) {
+  if (!word) return;
 
   word = word.trim();
-  CognitionWP.spellChecker.addCustomWord(word);
 
-  // Save to config
+  // Add to native Hunspell dictionary via IPC
+  try {
+    await window.cognition.spell.addWord(word);
+  } catch (e) {
+    console.warn('[Cognition WP] Could not add word to dictionary', e);
+  }
+
+  // Also save in config for persistence
   const customWords = CognitionWP.config['editor.customDictionary'] || [];
   if (!customWords.includes(word)) {
     customWords.push(word);

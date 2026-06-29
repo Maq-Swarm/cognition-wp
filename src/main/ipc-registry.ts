@@ -36,6 +36,7 @@ export class IPCMainRegistry {
     this.registerWindowHandlers();
     this.registerUpdateHandlers();
     this.registerPluginScaffoldHandler();
+    this.registerSpellcheckHandlers();
   }
 
   // ─── Document Operations ───────────────────────────────────
@@ -500,6 +501,62 @@ module.exports = { activate, deactivate };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : String(err) };
       }
+    });
+  }
+
+  // ─── Spellcheck (native Hunspell) ───────────────────────
+
+  private registerSpellcheckHandlers() {
+    // Get spelling suggestions for a misspelled word using Electron's built-in Hunspell
+    ipcMain.handle('spell:check', async (_, word: string) => {
+      const win = this.windowManager.getMainWindow();
+      if (!win) return { correct: true, suggestions: [] };
+      const session = win.webContents.session as any;
+      const isMisspelled = session.spellChecker?.isMisspelled?.(word) ?? false;
+      let suggestions: string[] = [];
+      if (isMisspelled) {
+        if (session.spellChecker && typeof session.spellChecker.getCorrectionsForMisspelling === 'function') {
+          suggestions = session.spellChecker.getCorrectionsForMisspelling(word) || [];
+        }
+      }
+      return { correct: !isMisspelled, suggestions: suggestions.slice(0, 8) };
+    });
+
+    // Add a word to the custom dictionary
+    ipcMain.handle('spell:addWord', async (_, word: string) => {
+      const win = this.windowManager.getMainWindow();
+      if (!win) return { success: false };
+      win.webContents.session.addWordToSpellCheckerDictionary(word);
+      return { success: true };
+    });
+
+    // Check multiple words and return misspelled ones with positions
+    ipcMain.handle('spell:checkText', async (_, text: string) => {
+      const win = this.windowManager.getMainWindow();
+      if (!win) return [];
+      const session = win.webContents.session as any;
+      const errors: Array<{ word: string; start: number; end: number; suggestions: string[] }> = [];
+      const wordRegex = /[a-zA-Z]+(?:'[a-zA-Z]+)?/g;
+      let match;
+      while ((match = wordRegex.exec(text)) !== null) {
+        const word = match[0];
+        if (word.length <= 1) continue;
+        if (word === word.toUpperCase() && word.length > 1) continue;
+        const isMisspelled = session.spellChecker?.isMisspelled?.(word) ?? false;
+        if (isMisspelled) {
+          let suggestions: string[] = [];
+          if (session.spellChecker && typeof session.spellChecker.getCorrectionsForMisspelling === 'function') {
+            suggestions = session.spellChecker.getCorrectionsForMisspelling(word) || [];
+          }
+          errors.push({
+            word,
+            start: match.index,
+            end: match.index + word.length,
+            suggestions: suggestions.slice(0, 5),
+          });
+        }
+      }
+      return errors;
     });
   }
 }
